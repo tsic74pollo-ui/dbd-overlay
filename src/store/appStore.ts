@@ -1,9 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AppPersistedState, OverlaySettings, Room } from "@/lib/types";
-import { newRoom, normalizePerkCover, normalizeMatchTimer } from "@/lib/defaults";
+import type { AppPersistedState, OverlaySettings, Room, SetsLine } from "@/lib/types";
+import { isSetsLine } from "@/lib/types";
+import {
+  newRoom,
+  normalizePerkCover,
+  normalizeMatchTimer,
+  normalizeSessionTimer,
+} from "@/lib/defaults";
 import { tryLoadLegacy } from "@/lib/migrateLegacy";
-import { startSw, stopSw } from "@/lib/timer";
+import { startSw, resetSw } from "@/lib/timer";
 
 type AppActions = {
   addRoom: (name?: string) => string;
@@ -20,7 +26,15 @@ type AppActions = {
    * updateActiveRoomSettings を経由するので useRoomsSync 側の broadcast に
    * 自動的に乗る(オーバーレイ側にも即時反映される)。
    */
-  toggleMatchTimer: () => void;
+  /** マッチタイマー: 停止中(かつ 0) → 開始 / それ以外(稼働中 or 経過あり) → リセット */
+  startResetMatchTimer: () => void;
+  /** パーク開放カウントダウン: 停止中 → 開始 / 稼働中 or 経過あり → リセット */
+  startResetPerkTimer: () => void;
+  /** 通しタイマー: 停止中 → 開始 / 稼働中 or 経過あり → リセット */
+  startResetSessionTimer: () => void;
+  /** 次のSETへ(SetsLine が manual モードのとき有効) */
+  cycleSets: (dir: 1 | -1) => void;
+  /** ホットキー B 旧仕様(強制即開放)。UI ボタン用に残す */
   releasePerkCover: () => void;
   cycleRoom: (dir: 1 | -1) => void;
 };
@@ -110,18 +124,93 @@ export const useAppStore = create<AppStore>()(
       setApiKey: (apiKey) => set({ apiKey }),
 
       // ---- Hotkey / Remote actions ----------------------------------------
-      toggleMatchTimer: () => {
+      // 「停止中かつ経過 0」のときだけ start。それ以外(稼働中/経過あり)は reset。
+      // 押す → 開始 → 押す → 0 に戻る、というシンプルな2状態サイクル。
+      startResetMatchTimer: () => {
         const id = get().activeRoomId;
         set({
           rooms: get().rooms.map((r) => {
             if (r.id !== id) return r;
             const mt = normalizeMatchTimer(r.settings.matchTimer);
-            const next = mt.running ? stopSw(mt) : startSw(mt);
-            // タイマー有効でなければ自動的に有効化(オーバーレイに出るようにする)
+            const idle = !mt.running && mt.accumulatedMs === 0;
+            const next = idle ? startSw(mt) : resetSw(mt);
             const ensured = { ...next, enabled: true };
             return {
               ...r,
               settings: { ...r.settings, matchTimer: ensured },
+              updatedAt: Date.now(),
+            };
+          }),
+        });
+      },
+
+      startResetPerkTimer: () => {
+        const id = get().activeRoomId;
+        set({
+          rooms: get().rooms.map((r) => {
+            if (r.id !== id) return r;
+            const pc = normalizePerkCover(r.settings.perkCover);
+            const t = pc.timer;
+            const idle = !t.running && t.accumulatedMs === 0;
+            const nextTimer = idle ? startSw(t) : resetSw(t);
+            return {
+              ...r,
+              settings: {
+                ...r.settings,
+                perkCover: {
+                  ...pc,
+                  enabled: true,
+                  timer: { ...nextTimer, enabled: true },
+                  // リセット時は強制開放フラグも巻き戻す(カバーを再表示)
+                  forceReleased: false,
+                },
+              },
+              updatedAt: Date.now(),
+            };
+          }),
+        });
+      },
+
+      startResetSessionTimer: () => {
+        const id = get().activeRoomId;
+        set({
+          rooms: get().rooms.map((r) => {
+            if (r.id !== id) return r;
+            const st = normalizeSessionTimer(r.settings.sessionTimer);
+            const idle = !st.running && st.accumulatedMs === 0;
+            const next = idle ? startSw(st) : resetSw(st);
+            return {
+              ...r,
+              settings: {
+                ...r.settings,
+                sessionTimer: { ...next, enabled: true },
+              },
+              updatedAt: Date.now(),
+            };
+          }),
+        });
+      },
+
+      cycleSets: (dir) => {
+        const id = get().activeRoomId;
+        set({
+          rooms: get().rooms.map((r) => {
+            if (r.id !== id) return r;
+            // SetsLine を探す(lines の中で唯一)
+            const idx = r.settings.lines.findIndex(isSetsLine);
+            if (idx < 0) return r;
+            const sl = r.settings.lines[idx] as SetsLine;
+            if (!sl.sets || sl.sets.length === 0) return r;
+            // manual モードでないなら無効(誤操作を防ぐ)
+            if ((sl.cycleMode ?? "auto") !== "manual") return r;
+            const cur = sl.currentSetIndex ?? 0;
+            const next = (cur + dir + sl.sets.length) % sl.sets.length;
+            const newLines = r.settings.lines.map((l, i) =>
+              i === idx ? { ...(l as SetsLine), currentSetIndex: next } : l,
+            );
+            return {
+              ...r,
+              settings: { ...r.settings, lines: newLines },
               updatedAt: Date.now(),
             };
           }),

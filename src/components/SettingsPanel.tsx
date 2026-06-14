@@ -1,6 +1,19 @@
 import { useAppStore, selectActiveRoom } from "@/store/appStore";
-import { LINE_LABELS, normalizeMatchTimer, normalizePerkCover } from "@/lib/defaults";
-import type { Align, Line, MatchTimer, PerkCover, SetsLine, TextLine } from "@/lib/types";
+import {
+  LINE_LABELS,
+  normalizeMatchTimer,
+  normalizePerkCover,
+  normalizeSessionTimer,
+} from "@/lib/defaults";
+import type {
+  Align,
+  Line,
+  MatchTimer,
+  PerkCover,
+  SessionTimer,
+  SetsLine,
+  TextLine,
+} from "@/lib/types";
 import { isSetsLine } from "@/lib/types";
 import { IconPicker } from "@/components/IconPicker";
 import { LineEditor } from "@/components/LineEditor";
@@ -9,6 +22,7 @@ import { AlignSelector } from "@/components/AlignSelector";
 import { MatchControls } from "@/components/MatchControls";
 import { PerkCoverEditor } from "@/components/PerkCoverEditor";
 import { MatchTimerEditor } from "@/components/MatchTimerEditor";
+import { SessionTimerEditor } from "@/components/SessionTimerEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
 import { HotkeySettings } from "@/components/HotkeySettings";
 
@@ -36,6 +50,10 @@ export function SettingsPanel() {
     update((s) => ({ ...s, matchTimer: next }));
   };
 
+  const setSessionTimer = (next: SessionTimer) => {
+    update((s) => ({ ...s, sessionTimer: next }));
+  };
+
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -58,6 +76,8 @@ export function SettingsPanel() {
       <PerkCoverEditor value={normalizePerkCover(settings.perkCover)} onChange={setPerkCover} />
 
       <MatchTimerEditor value={normalizeMatchTimer(settings.matchTimer)} onChange={setMatchTimer} />
+
+      <SessionTimerEditor value={normalizeSessionTimer(settings.sessionTimer)} onChange={setSessionTimer} />
 
       <IconPicker iconImage={settings.iconImage} onChange={setIcon} />
 

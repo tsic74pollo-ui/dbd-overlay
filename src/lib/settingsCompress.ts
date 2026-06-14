@@ -4,12 +4,15 @@ import type {
   PerkCover,
   PerkCoverGlow,
   PerkCoverTimer,
+  SessionTimer,
 } from "./types";
 import {
   defaultMatchTimer,
   defaultPerkCover,
+  defaultSessionTimer,
   normalizeMatchTimer,
   normalizePerkCover,
+  normalizeSessionTimer,
 } from "./defaults";
 
 /**
@@ -72,6 +75,10 @@ const compressMatchTimer = (mt: MatchTimer): Partial<MatchTimer> => {
   return stripObject(mt, defaultMatchTimer());
 };
 
+const compressSessionTimer = (st: SessionTimer): Partial<SessionTimer> => {
+  return stripObject(st, defaultSessionTimer());
+};
+
 export const compressSettings = (
   s: OverlaySettings,
 ): Partial<OverlaySettings> => {
@@ -88,6 +95,10 @@ export const compressSettings = (
     const c = compressMatchTimer(s.matchTimer);
     if (Object.keys(c).length > 0) out.matchTimer = c as MatchTimer;
   }
+  if (s.sessionTimer) {
+    const c = compressSessionTimer(s.sessionTimer);
+    if (Object.keys(c).length > 0) out.sessionTimer = c as SessionTimer;
+  }
   return out;
 };
 
@@ -103,6 +114,9 @@ export const decompressSettings = (
       : undefined,
     matchTimer: s.matchTimer
       ? normalizeMatchTimer(s.matchTimer as Partial<MatchTimer>)
+      : undefined,
+    sessionTimer: s.sessionTimer
+      ? normalizeSessionTimer(s.sessionTimer as Partial<SessionTimer>)
       : undefined,
   };
 };

@@ -6,6 +6,7 @@ import type {
   PerkCoverGlow,
   PerkCoverGlowStyle,
   Room,
+  SessionTimer,
 } from "./types";
 
 // =============================================================================
@@ -19,10 +20,12 @@ const USER_DEFAULTS_KEY = "dbd-overlay:user-defaults:v1";
 
 type PerkCoverRect = { x: number; y: number; width: number; height: number };
 type MatchTimerPos = { x: number; y: number };
+type SessionTimerPos = { x: number; y: number };
 
 type UserDefaults = {
   perkCoverRect?: PerkCoverRect;
   matchTimerPos?: MatchTimerPos;
+  sessionTimerPos?: SessionTimerPos;
 };
 
 const readUserDefaults = (): UserDefaults => {
@@ -50,6 +53,10 @@ export const saveUserDefaultPerkCoverRect = (rect: PerkCoverRect): void => {
 
 export const saveUserDefaultMatchTimerPos = (pos: MatchTimerPos): void => {
   writeUserDefaults({ ...readUserDefaults(), matchTimerPos: pos });
+};
+
+export const saveUserDefaultSessionTimerPos = (pos: SessionTimerPos): void => {
+  writeUserDefaults({ ...readUserDefaults(), sessionTimerPos: pos });
 };
 
 export const clearUserDefaults = (): void => {
@@ -165,6 +172,23 @@ export const defaultMatchTimer = (): MatchTimer => {
   };
 };
 
+// 通しタイマー（OBS録画通し時間・既定は右上・カウントアップ）。
+export const defaultSessionTimer = (): SessionTimer => {
+  const ud = readUserDefaults();
+  const p = ud.sessionTimerPos;
+  return {
+    enabled: false,
+    x: p?.x ?? 82,
+    y: p?.y ?? 2,
+    color: "#FFB347",
+    fontScale: 0.9,
+    label: "REC",
+    startedAt: null,
+    accumulatedMs: 0,
+    running: false,
+  };
+};
+
 // 既存の保存データ/同期データに新フィールドが無くてもデフォルトで埋める（後方互換）。
 /**
  * 旧 boolean(neonPulse/rainbow/flow) から新 style を推論する。
@@ -210,6 +234,11 @@ export const normalizeMatchTimer = (mt?: Partial<MatchTimer>): MatchTimer => ({
   ...mt,
 });
 
+export const normalizeSessionTimer = (st?: Partial<SessionTimer>): SessionTimer => ({
+  ...defaultSessionTimer(),
+  ...st,
+});
+
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [
   { key: "1080p-80", label: "1080p / HUD 80%", rect: { x: 88.5, y: 79, width: 10.5, height: 19 } },
@@ -221,6 +250,7 @@ export const defaultSettings = (): OverlaySettings => ({
   lines: defaultLines(),
   perkCover: defaultPerkCover(),
   matchTimer: defaultMatchTimer(),
+  sessionTimer: defaultSessionTimer(),
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({

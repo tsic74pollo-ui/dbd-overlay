@@ -1,5 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import type { Line, MatchTimer, OverlaySettings, PerkCover, SetsLine, TextLine } from "@/lib/types";
+import type {
+  Line,
+  MatchTimer,
+  OverlaySettings,
+  PerkCover,
+  SessionTimer,
+  SetsLine,
+  TextLine,
+} from "@/lib/types";
 import { isSetsLine } from "@/lib/types";
 import { elapsedMs, fmtDown, fmtUp } from "@/lib/timer";
 import { cn } from "@/lib/cn";
@@ -8,10 +16,11 @@ import { useAudioReactive } from "@/lib/useAudioReactive";
 
 type Props = {
   settings: OverlaySettings;
-  /** When true, PerkCover / MatchTimer become draggable for in-place positioning. */
+  /** When true, PerkCover / MatchTimer / SessionTimer become draggable for in-place positioning. */
   editable?: boolean;
   onMovePerkCover?: (x: number, y: number) => void;
   onMoveMatchTimer?: (x: number, y: number) => void;
+  onMoveSessionTimer?: (x: number, y: number) => void;
 };
 
 const STAGE_SELECTOR = ".overlay-stage";
@@ -258,23 +267,97 @@ function MatchTimerView({
   );
 }
 
+// 通しタイマー（OBS録画通し時間・カウントアップ）。位置・色は SessionTimer 側で制御。
+function SessionTimerView({
+  st,
+  now,
+  editable,
+  onMove,
+}: {
+  st: SessionTimer;
+  now: number;
+  editable?: boolean;
+  onMove?: (x: number, y: number) => void;
+}) {
+  const dragProps = useDraggablePercent({
+    current: { x: st.x, y: st.y },
+    stageSelector: STAGE_SELECTOR,
+    onDrag: ({ x, y }) => onMove?.(x, y),
+  });
+  // 1時間超えで H:MM:SS、それ未満は MM:SS を出すのは fmtUp 側で対応済み。
+  return (
+    <div
+      className={cn(editable && onMove && "edit-draggable")}
+      style={{
+        position: "absolute",
+        left: `${st.x}%`,
+        top: `${st.y}%`,
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        fontWeight: 800,
+        fontVariantNumeric: "tabular-nums",
+        color: st.color,
+        fontSize: `${st.fontScale * 22}px`,
+        lineHeight: 1.05,
+        background: "rgba(0,0,0,0.42)",
+        padding: "4px 10px",
+        borderRadius: 6,
+        textShadow: "2px 2px 4px rgba(0,0,0,0.9)",
+      }}
+      {...(editable && onMove ? dragProps : {})}
+    >
+      {st.label && (
+        <span
+          style={{
+            fontSize: "0.42em",
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            opacity: 0.9,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          {st.running && (
+            <span
+              style={{
+                display: "inline-block",
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "#FF3B3B",
+                boxShadow: "0 0 6px rgba(255,59,59,0.85)",
+              }}
+            />
+          )}
+          {st.label}
+        </span>
+      )}
+      <span>{fmtUp(elapsedMs(st, now) / 1000)}</span>
+    </div>
+  );
+}
+
 export function OverlayView({
   settings,
   editable,
   onMovePerkCover,
   onMoveMatchTimer,
+  onMoveSessionTimer,
 }: Props) {
-  const { iconImage, lines, perkCover, matchTimer } = settings;
+  const { iconImage, lines, perkCover, matchTimer, sessionTimer } = settings;
   const [maxRowWidth, setMaxRowWidth] = useState(0);
   const [iconSize, setIconSize] = useState(40);
-  const [setIndex, setSetIndex] = useState(0);
+  const [autoSetIndex, setAutoSetIndex] = useState(0);
   const [setFading, setSetFading] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const titleRef = useRef<HTMLDivElement | null>(null);
 
   // タイマー稼働中のみ 250ms ごとに now を更新（local state なので broadcast しない）
-  const timersRunning = !!perkCover?.timer?.running || !!matchTimer?.running;
+  const timersRunning =
+    !!perkCover?.timer?.running || !!matchTimer?.running || !!sessionTimer?.running;
   useEffect(() => {
     if (!timersRunning) return;
     setNow(Date.now());
@@ -303,22 +386,40 @@ export function OverlayView({
   const setsLine = lines[5] as SetsLine | undefined;
   const setsVisible = setsLine?.visible && setsLine.sets && setsLine.sets.length > 0;
   const setsCount = setsLine?.sets?.length ?? 0;
+  const cycleMode = setsLine?.cycleMode ?? "auto";
+  // manual モード時は settings 由来の currentSetIndex、auto モード時はローカル自動カウンタを参照
+  const manualSetIndex = Math.min(
+    Math.max(0, setsLine?.currentSetIndex ?? 0),
+    Math.max(0, setsCount - 1),
+  );
+  const setIndex = cycleMode === "manual" ? manualSetIndex : autoSetIndex;
+  const prevManualSetIndexRef = useRef(manualSetIndex);
 
-  // Cycle SETs every 3s with fade transition
+  // manual モード時の SET 切替にもフェード演出をかける(押した瞬間の見栄え)
   useEffect(() => {
-    if (!setsVisible) {
-      setSetIndex(0);
+    if (cycleMode !== "manual") return;
+    if (prevManualSetIndexRef.current === manualSetIndex) return;
+    prevManualSetIndexRef.current = manualSetIndex;
+    setSetFading(true);
+    const t = window.setTimeout(() => setSetFading(false), 380);
+    return () => clearTimeout(t);
+  }, [cycleMode, manualSetIndex]);
+
+  // auto モード時は 3 秒ごとにフェード遷移して次のSETへ
+  useEffect(() => {
+    if (!setsVisible || cycleMode !== "auto") {
+      setAutoSetIndex(0);
       setSetFading(false);
       return;
     }
-    if (setIndex >= setsCount) setSetIndex(0);
+    if (autoSetIndex >= setsCount) setAutoSetIndex(0);
 
     let next: number | undefined;
     let post: number | undefined;
     const tick = () => {
       setSetFading(true);
       post = window.setTimeout(() => {
-        setSetIndex((i) => (i + 1) % setsCount);
+        setAutoSetIndex((i) => (i + 1) % setsCount);
         setSetFading(false);
         next = window.setTimeout(tick, 3000);
       }, 850);
@@ -328,7 +429,7 @@ export function OverlayView({
       if (next) clearTimeout(next);
       if (post) clearTimeout(post);
     };
-  }, [setsVisible, setsCount, setIndex]);
+  }, [setsVisible, setsCount, autoSetIndex, cycleMode]);
 
   const middleLines = lines.slice(2, 5);
 
@@ -481,6 +582,16 @@ export function OverlayView({
           now={now}
           editable={editable}
           onMove={onMoveMatchTimer}
+        />
+      )}
+
+      {/* 通しタイマー(OBS 録画通し時間) */}
+      {sessionTimer?.enabled && (
+        <SessionTimerView
+          st={sessionTimer}
+          now={now}
+          editable={editable}
+          onMove={onMoveSessionTimer}
         />
       )}
     </div>

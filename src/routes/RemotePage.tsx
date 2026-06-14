@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Timer, Eye, ArrowRight, Wifi, WifiOff } from "lucide-react";
+import { Timer, Eye, ArrowRight, Wifi, WifiOff, ChevronRight, Circle } from "lucide-react";
 import {
   joinCommandChannel,
   type CommandHandle,
@@ -82,10 +82,37 @@ export function RemotePage() {
     if ("vibrate" in navigator) navigator.vibrate?.(15);
   };
 
-  const timerLabel = useMemo(() => {
+  const matchTimerLabel = useMemo(() => {
     const mt = settings?.matchTimer;
-    if (!mt) return "Match Timer";
-    return mt.running ? "⏸ タイマー停止" : "▶ タイマー開始";
+    if (!mt) return "▶ マッチ開始";
+    const idle = !mt.running && mt.accumulatedMs === 0;
+    return idle ? "▶ マッチ開始" : "↺ マッチリセット";
+  }, [settings]);
+
+  const perkTimerLabel = useMemo(() => {
+    const t = settings?.perkCover?.timer;
+    if (!t) return "▶ 開放タイマー";
+    const idle = !t.running && t.accumulatedMs === 0;
+    return idle ? "▶ 開放タイマー開始" : "↺ 開放タイマーリセット";
+  }, [settings]);
+
+  const sessionTimerLabel = useMemo(() => {
+    const st = settings?.sessionTimer;
+    if (!st) return "▶ 通しタイマー";
+    const idle = !st.running && st.accumulatedMs === 0;
+    return idle ? "▶ 通し開始" : "↺ 通しリセット";
+  }, [settings]);
+
+  // SetsLine は lines[5] か isSetsLine の検出に頼る
+  const setsManual = useMemo(() => {
+    const sl = settings?.lines?.find((l) => Array.isArray((l as { sets?: unknown }).sets)) as
+      | { cycleMode?: "auto" | "manual"; sets?: unknown[]; currentSetIndex?: number }
+      | undefined;
+    if (!sl || sl.cycleMode !== "manual") return null;
+    const count = sl.sets?.length ?? 0;
+    if (count === 0) return null;
+    const cur = (sl.currentSetIndex ?? 0) + 1;
+    return { cur, count };
   }, [settings]);
 
   if (!roomId) {
@@ -114,24 +141,42 @@ export function RemotePage() {
         </span>
       </header>
 
-      {/* 巨大ボタン3つ。それぞれ画面の約30% */}
+      {/* 大きなボタンを縦に並べる。それぞれ自動で flex 配分される */}
       <div className="flex-1 flex flex-col gap-3 p-4">
         <BigButton
           accent="amber"
           icon={<Timer size={36} />}
-          label={timerLabel}
-          sub="マッチタイマー"
+          label={matchTimerLabel}
+          sub="マッチタイマー 開始/リセット"
           pressed={pressed === "timer.toggle"}
           onClick={() => send("timer.toggle")}
         />
         <BigButton
           accent="emerald"
           icon={<Eye size={36} />}
-          label="カバー開放"
-          sub="パーク隠しを即開く"
+          label={perkTimerLabel}
+          sub="パーク開放カウントダウン 開始/リセット"
           pressed={pressed === "perkCover.release"}
           onClick={() => send("perkCover.release")}
         />
+        <BigButton
+          accent="red"
+          icon={<Circle size={36} className={settings?.sessionTimer?.running ? "animate-pulse fill-current" : ""} />}
+          label={sessionTimerLabel}
+          sub="OBS録画通し時間 開始/リセット"
+          pressed={pressed === "session.toggle"}
+          onClick={() => send("session.toggle")}
+        />
+        {setsManual && (
+          <BigButton
+            accent="violet"
+            icon={<ChevronRight size={36} />}
+            label={`次のSETへ (${setsManual.cur}/${setsManual.count})`}
+            sub="SET一覧の手動切替"
+            pressed={pressed === "sets.next"}
+            onClick={() => send("sets.next")}
+          />
+        )}
         <BigButton
           accent="sky"
           icon={<ArrowRight size={36} />}
@@ -157,7 +202,7 @@ function BigButton({
   pressed,
   onClick,
 }: {
-  accent: "amber" | "emerald" | "sky";
+  accent: "amber" | "emerald" | "sky" | "red" | "violet";
   icon: React.ReactNode;
   label: string;
   sub: string;
@@ -176,6 +221,14 @@ function BigButton({
     sky: {
       base: "bg-sky-600 hover:bg-sky-500 border-sky-500/40 shadow-sky-500/15",
       pressed: "bg-sky-400",
+    },
+    red: {
+      base: "bg-red-600 hover:bg-red-500 border-red-500/40 shadow-red-500/15",
+      pressed: "bg-red-400",
+    },
+    violet: {
+      base: "bg-violet-600 hover:bg-violet-500 border-violet-500/40 shadow-violet-500/15",
+      pressed: "bg-violet-400",
     },
   }[accent];
 

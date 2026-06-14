@@ -19,10 +19,19 @@ export type SetEntry = {
   playerName: string;
 };
 
+/** SET一覧の表示モード。
+ * - "auto": 3秒ごとに次のSETへ自動切替（既定。従来動作）
+ * - "manual": ホットキー/リモコンで次のSETに切替。currentSetIndex を尊重 */
+export type SetsCycleMode = "auto" | "manual";
+
 export type SetsLine = LineBase & {
   text?: string;
   color?: string;
   sets: SetEntry[];
+  /** 既定 "auto"。"manual" のときは currentSetIndex を読む */
+  cycleMode?: SetsCycleMode;
+  /** "manual" 時の現在表示中インデックス。auto 時は無視 */
+  currentSetIndex?: number;
 };
 
 export type Line = TextLine | SetsLine;
@@ -136,12 +145,25 @@ export type MatchTimer = StopwatchState & {
   label: string;
 };
 
+/** 通しタイマー(OBS録画時間記録用)。マッチタイマーと違い、Live/録画終了まで
+ *  リセットしない長時間タイマー。後で映像と紐付けて各マッチ開始時刻を逆引きする用途。
+ *  形は MatchTimer とほぼ同じだが、独立した position / 色 / ラベルを持つ。 */
+export type SessionTimer = StopwatchState & {
+  enabled: boolean;
+  x: number; // 位置 %（既定は画面右上）
+  y: number;
+  color: string;
+  fontScale: number;
+  label: string;
+};
+
 export type OverlaySettings = {
   iconImage: string;
   lines: Line[];
   align?: Align;
   perkCover?: PerkCover;
   matchTimer?: MatchTimer;
+  sessionTimer?: SessionTimer;
 };
 
 export type Room = {

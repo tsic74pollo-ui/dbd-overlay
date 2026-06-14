@@ -1,5 +1,5 @@
-import { Plus, X } from "lucide-react";
-import type { SetEntry, SetsLine } from "@/lib/types";
+import { Plus, X, ChevronLeft, ChevronRight } from "lucide-react";
+import type { SetEntry, SetsCycleMode, SetsLine } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -58,6 +58,69 @@ export function SetsEditor({ label, line, onChange }: Props) {
               onChange={(e) => onChange({ color: e.target.value })}
               placeholder="#FFFFFF"
             />
+          </div>
+
+          {/* 表示切替モード: auto(3秒で自動切替) / manual(ホットキー M で次へ) */}
+          <div className="space-y-2 p-3 bg-gray-750 rounded">
+            <Label className="text-white text-sm font-semibold">表示切替モード</Label>
+            <div className="flex gap-2">
+              {(["auto", "manual"] as SetsCycleMode[]).map((m) => {
+                const active = (line.cycleMode ?? "auto") === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => onChange({ cycleMode: m })}
+                    className={
+                      "flex-1 rounded border px-3 py-1.5 text-xs transition " +
+                      (active
+                        ? "bg-orange-500 border-orange-400 text-white"
+                        : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
+                    }
+                  >
+                    {m === "auto" ? "自動(3秒ループ)" : "手動(ホットキー)"}
+                  </button>
+                );
+              })}
+            </div>
+            {(line.cycleMode ?? "auto") === "manual" && line.sets.length > 0 && (
+              <div className="flex items-center gap-2 pt-1">
+                <Label className="text-white text-xs flex-1">
+                  現在: SET{line.sets[Math.min(line.currentSetIndex ?? 0, line.sets.length - 1)]?.setNumber ?? 1}{" "}
+                  ({(line.currentSetIndex ?? 0) + 1}/{line.sets.length})
+                </Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    onChange({
+                      currentSetIndex:
+                        ((line.currentSetIndex ?? 0) - 1 + line.sets.length) % line.sets.length,
+                    })
+                  }
+                  title="前のSETへ"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    onChange({
+                      currentSetIndex: ((line.currentSetIndex ?? 0) + 1) % line.sets.length,
+                    })
+                  }
+                  title="次のSETへ(ホットキー M と同等)"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                  次のSET
+                </Button>
+              </div>
+            )}
+            <p className="text-xs text-gray-400 leading-snug">
+              {(line.cycleMode ?? "auto") === "auto"
+                ? "3 秒ごとに SET1→SET2→… と自動で切り替わります。"
+                : "ホットキー M または上のボタンで次のSETへ。OBS シーン切替に合わせて使うのに便利。"}
+            </p>
           </div>
 
           <div className="space-y-3">

@@ -12,8 +12,10 @@
 import type { AppStore } from "@/store/appStore";
 
 export type RemoteCommand =
-  | "timer.toggle"
-  | "perkCover.release"
+  | "timer.toggle" // (互換ID。実体は startResetMatchTimer に変更)
+  | "perkCover.release" // (互換ID。実体は startResetPerkTimer に変更)
+  | "sets.next"
+  | "session.toggle"
   | "room.next"
   | "room.prev";
 
@@ -35,17 +37,31 @@ export type HotkeyAction = {
 export const HOTKEY_ACTIONS: HotkeyAction[] = [
   {
     id: "timer.toggle",
-    label: "マッチタイマー 開始/停止",
+    label: "マッチタイマー 開始/リセット",
     shortLabel: "Timer",
     key: "t",
-    perform: (s) => s.toggleMatchTimer(),
+    perform: (s) => s.startResetMatchTimer(),
   },
   {
     id: "perkCover.release",
-    label: "パークカバー開放",
-    shortLabel: "Reveal",
+    label: "パーク開放タイマー 開始/リセット",
+    shortLabel: "Perk Timer",
     key: "b",
-    perform: (s) => s.releasePerkCover(),
+    perform: (s) => s.startResetPerkTimer(),
+  },
+  {
+    id: "sets.next",
+    label: "次のSETへ(手動切替モード時)",
+    shortLabel: "Next SET",
+    key: "m",
+    perform: (s) => s.cycleSets(1),
+  },
+  {
+    id: "session.toggle",
+    label: "通しタイマー 開始/リセット",
+    shortLabel: "Rec Timer",
+    key: "r",
+    perform: (s) => s.startResetSessionTimer(),
   },
   {
     id: "room.next",
