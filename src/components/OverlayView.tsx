@@ -1,0 +1,488 @@
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+import type { Line, MatchTimer, OverlaySettings, PerkCover, SetsLine, TextLine } from "@/lib/types";
+import { isSetsLine } from "@/lib/types";
+import { elapsedMs, fmtDown, fmtUp } from "@/lib/timer";
+import { cn } from "@/lib/cn";
+import { useDraggablePercent } from "@/lib/useDraggablePercent";
+import { useAudioReactive } from "@/lib/useAudioReactive";
+
+type Props = {
+  settings: OverlaySettings;
+  /** When true, PerkCover / MatchTimer become draggable for in-place positioning. */
+  editable?: boolean;
+  onMovePerkCover?: (x: number, y: number) => void;
+  onMoveMatchTimer?: (x: number, y: number) => void;
+};
+
+const STAGE_SELECTOR = ".overlay-stage";
+
+const hexToRgba = (hex: string | undefined, opacity: number): string => {
+  if (!hex || hex.length < 7 || !hex.startsWith("#")) {
+    return `rgba(45, 45, 45, ${opacity})`;
+  }
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+};
+
+const lineText = (l: Line): string => {
+  const t = l as TextLine;
+  if (t.segments && t.segments.length > 0) {
+    return t.segments.map((s) => s.text).join("");
+  }
+  return t.text || "";
+};
+
+const lineWhitespace = (l: Line): CSSProperties["whiteSpace"] =>
+  lineText(l).includes("\n") ? "pre" : "nowrap";
+
+const lineColorStyle = (l: Line): CSSProperties => {
+  const t = l as TextLine;
+  return !t.segments && t.color ? { color: t.color } : {};
+};
+
+const lineBgStyle = (l: Line): CSSProperties => {
+  if (l.showBackground && l.backgroundColor) {
+    const opacity = l.backgroundOpacity ?? 1;
+    return { backgroundColor: hexToRgba(l.backgroundColor, opacity) };
+  }
+  return {};
+};
+
+const RenderText = ({ line }: { line: Line }) => {
+  const t = line as TextLine;
+  if (t.segments && t.segments.length > 0) {
+    return (
+      <>
+        {t.segments.map((s, i) => (
+          <span key={i} style={{ color: s.color }}>
+            {s.text}
+          </span>
+        ))}
+      </>
+    );
+  }
+  const text = t.text || "";
+  const lines = text.split("\n");
+  return (
+    <>
+      {lines.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < lines.length - 1 && <br />}
+        </span>
+      ))}
+    </>
+  );
+};
+
+// 残時間で色変化（灰 → 黄 → 赤）。ratio: 1=開始(灰) → 0=終了(赤)
+const TC_GRAY = [90, 92, 100];
+const TC_YELLOW = [255, 214, 0];
+const TC_RED = [255, 42, 42];
+const mixRgb = (a: number[], b: number[], t: number): string =>
+  `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)}, ${Math.round(a[1] + (b[1] - a[1]) * t)}, ${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+const timerColor = (ratio: number): string => {
+  const r = Math.max(0, Math.min(1, ratio));
+  return r >= 0.5 ? mixRgb(TC_GRAY, TC_YELLOW, (1 - r) / 0.5) : mixRgb(TC_YELLOW, TC_RED, (0.5 - r) / 0.5);
+};
+
+const RAINBOW =
+  "conic-gradient(from var(--ringAngle), #ff004c, #ff7a18, #ffe600, #29ff5e, #00e5ff, #2f6bff, #c04cff, #ff004c)";
+// 指定色を流す（白いハイライトが回って指定色が光って流れて見える）
+const FLOW = "conic-gradient(from var(--ringAngle), var(--glow), #ffffff, var(--glow), var(--glow), var(--glow))";
+
+// 4パークの並びに合わせたカバー（形状切替可）＋光る枠＋枠外のカウントダウン
+function PerkCoverView({
+  pc,
+  now,
+  editable,
+  onMove,
+}: {
+  pc: PerkCover;
+  now: number;
+  editable?: boolean;
+  onMove?: (x: number, y: number) => void;
+}) {
+  const dragProps = useDraggablePercent({
+    current: { x: pc.x, y: pc.y },
+    stageSelector: STAGE_SELECTOR,
+    onDrag: ({ x, y }) => onMove?.(x, y),
+  });
+
+  // audio スタイルのときだけマイクを開く。それ以外は idle で何もしない。
+  const audioActive = pc.glow.enabled && pc.glow.style === "audio";
+  const { level: audioLevel } = useAudioReactive(
+    audioActive ? (pc.glow.audio ?? null) : null,
+    { enabled: audioActive, smoothingSec: pc.glow.speedSec },
+  );
+  const remaining = pc.timer.durationSec - elapsedMs(pc.timer, now) / 1000;
+  const started = pc.timer.running || pc.timer.accumulatedMs > 0;
+  // タイマー完走 OR ホットキー/リモコンからの強制開放のどちらでもリビールを発火
+  const released =
+    (pc.timer.enabled && started && remaining <= 0) ||
+    pc.forceReleased === true;
+  const ratio = pc.timer.durationSec > 0 ? Math.max(0, Math.min(1, remaining / pc.timer.durationSec)) : 0;
+
+  const g = pc.glow;
+  const glowOn = g.enabled;
+  const style = g.style;
+  const isRainbow = glowOn && style === "rainbow";
+  const isFlow = glowOn && style === "flow";
+  const isNeon = glowOn && style === "neon";
+  const isSolid = glowOn && style === "solid";
+  const isAudio = glowOn && style === "audio";
+  const spin = isRainbow || isFlow;
+
+  const glowColor = g.colorByTimer && pc.timer.enabled ? timerColor(ratio) : g.color;
+  const coverBg = hexToRgba(pc.backgroundColor, pc.opacity);
+
+  const ringBackground = isRainbow ? RAINBOW : isFlow ? FLOW : glowOn ? "var(--glow)" : coverBg;
+
+  const shape = pc.shape ?? "diamond";
+  const reveal = pc.reveal ?? "fade";
+  const revealMs = Math.max(120, Math.min(4000, pc.revealDurationMs ?? 600));
+
+  const coverStyle = {
+    left: `${pc.x}%`,
+    top: `${pc.y}%`,
+    width: `${pc.width}%`,
+    height: `${pc.height}%`,
+    "--coverBg": coverBg,
+    "--glow": glowColor,
+    "--glowSpeed": `${g.speedSec}s`,
+    "--ringW": glowOn ? "5px" : "0px",
+    "--revealMs": `${revealMs}ms`,
+    "--audio-level": isAudio ? audioLevel : 0,
+  } as CSSProperties;
+
+  // 残時間が urgentBelowSec を切ったらカウントダウンを点滅
+  const urgentPulse = pc.timer.urgentPulse ?? true;
+  const urgentBelow = pc.timer.urgentBelowSec ?? 10;
+  const urgent =
+    urgentPulse && pc.timer.enabled && started && !released && remaining > 0 && remaining <= urgentBelow;
+
+  return (
+    <>
+      <div
+        className={cn(
+          "perk-cover",
+          `shape-${shape}`,
+          `reveal-${reveal}`,
+          released && "released",
+          editable && onMove && "edit-draggable",
+        )}
+        style={coverStyle}
+        {...(editable && onMove ? dragProps : {})}
+      >
+        <div
+          className={cn(
+            "perk-diamond-frame",
+            isNeon && "neon",
+            spin && "spin",
+            isSolid && "glow-static",
+            isAudio && "audio",
+          )}
+          style={{ background: ringBackground }}
+        >
+          <div className="perk-diamond-inner">
+            {pc.image && <img src={pc.image} alt="" style={{ objectFit: pc.fit }} />}
+          </div>
+        </div>
+      </div>
+
+      {pc.timer.enabled && pc.timer.showCountdown && !released && (
+        <div
+          className="perk-countdown-anchor"
+          style={{ left: `${pc.x}%`, top: `${pc.y}%`, width: `${pc.width}%`, height: `${pc.height}%` }}
+        >
+          <div
+            className={cn("perk-countdown", `pos-${pc.timer.countdownPos}`, urgent && "urgent")}
+            style={{ color: pc.timer.countdownColor }}
+          >
+            {fmtDown(remaining)}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// 左下のマッチタイマー（カウントアップ）
+function MatchTimerView({
+  mt,
+  now,
+  editable,
+  onMove,
+}: {
+  mt: MatchTimer;
+  now: number;
+  editable?: boolean;
+  onMove?: (x: number, y: number) => void;
+}) {
+  const dragProps = useDraggablePercent({
+    current: { x: mt.x, y: mt.y },
+    stageSelector: STAGE_SELECTOR,
+    onDrag: ({ x, y }) => onMove?.(x, y),
+  });
+  return (
+    <div
+      className={cn(editable && onMove && "edit-draggable")}
+      style={{
+        position: "absolute",
+        left: `${mt.x}%`,
+        top: `${mt.y}%`,
+        display: "inline-flex",
+        flexDirection: "column",
+        alignItems: "flex-start",
+        fontWeight: 900,
+        fontVariantNumeric: "tabular-nums",
+        color: mt.color,
+        fontSize: `${mt.fontScale * 28}px`,
+        lineHeight: 1.05,
+        background: "rgba(0,0,0,0.42)",
+        padding: "6px 14px",
+        borderRadius: 8,
+        textShadow: "2px 2px 4px rgba(0,0,0,0.9)",
+      }}
+      {...(editable && onMove ? dragProps : {})}
+    >
+      {mt.label && (
+        <span style={{ fontSize: "0.42em", fontWeight: 700, letterSpacing: "0.12em", opacity: 0.85 }}>
+          {mt.label}
+        </span>
+      )}
+      <span>{fmtUp(elapsedMs(mt, now) / 1000)}</span>
+    </div>
+  );
+}
+
+export function OverlayView({
+  settings,
+  editable,
+  onMovePerkCover,
+  onMoveMatchTimer,
+}: Props) {
+  const { iconImage, lines, perkCover, matchTimer } = settings;
+  const [maxRowWidth, setMaxRowWidth] = useState(0);
+  const [iconSize, setIconSize] = useState(40);
+  const [setIndex, setSetIndex] = useState(0);
+  const [setFading, setSetFading] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const titleRef = useRef<HTMLDivElement | null>(null);
+
+  // タイマー稼働中のみ 250ms ごとに now を更新（local state なので broadcast しない）
+  const timersRunning = !!perkCover?.timer?.running || !!matchTimer?.running;
+  useEffect(() => {
+    if (!timersRunning) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [timersRunning]);
+
+  // Equal width across rows 2-4
+  useLayoutEffect(() => {
+    const widths = rowRefs.current
+      .filter((el): el is HTMLDivElement => el !== null)
+      .map((el) => el.scrollWidth);
+    if (widths.length > 0) {
+      setMaxRowWidth(Math.max(...widths));
+    }
+  }, [lines]);
+
+  // Icon sizing follows Ladder row height
+  useLayoutEffect(() => {
+    if (titleRef.current) {
+      const h = titleRef.current.offsetHeight;
+      setIconSize(Math.max(40, Math.min(h, 80)));
+    }
+  }, [lines]);
+
+  const setsLine = lines[5] as SetsLine | undefined;
+  const setsVisible = setsLine?.visible && setsLine.sets && setsLine.sets.length > 0;
+  const setsCount = setsLine?.sets?.length ?? 0;
+
+  // Cycle SETs every 3s with fade transition
+  useEffect(() => {
+    if (!setsVisible) {
+      setSetIndex(0);
+      setSetFading(false);
+      return;
+    }
+    if (setIndex >= setsCount) setSetIndex(0);
+
+    let next: number | undefined;
+    let post: number | undefined;
+    const tick = () => {
+      setSetFading(true);
+      post = window.setTimeout(() => {
+        setSetIndex((i) => (i + 1) % setsCount);
+        setSetFading(false);
+        next = window.setTimeout(tick, 3000);
+      }, 850);
+    };
+    next = window.setTimeout(tick, 3000);
+    return () => {
+      if (next) clearTimeout(next);
+      if (post) clearTimeout(post);
+    };
+  }, [setsVisible, setsCount, setIndex]);
+
+  const middleLines = lines.slice(2, 5);
+
+  const align = settings.align ?? "left";
+  const itemsClass =
+    align === "center" ? "items-center" : align === "right" ? "items-end" : "items-start";
+
+  return (
+    <div
+      className={cn(
+        "relative w-full h-full",
+        // The drag handler in useDraggablePercent looks for this class on a parent.
+        "overlay-stage",
+      )}
+      style={{ fontFamily: "Arial, sans-serif" }}
+    >
+      {/* 試合情報ブロック（従来どおり左上・全幅で整列） */}
+      <div className={`absolute top-0 left-0 right-0 p-4 flex flex-col ${itemsClass}`}>
+        {lines[0].visible && (
+          <div className="flex items-center gap-2 mb-1">
+            {iconImage && (
+              <img
+                src={iconImage}
+                alt="Game Icon"
+                className="object-contain flex-shrink-0"
+                style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
+              />
+            )}
+            <div
+              ref={titleRef}
+              style={{
+                ...lineColorStyle(lines[0]),
+                ...lineBgStyle(lines[0]),
+                fontWeight: 900,
+                textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                whiteSpace: lineWhitespace(lines[0]),
+                ...(lines[0].showBackground
+                  ? { paddingLeft: 12, paddingRight: 12, paddingTop: 4, paddingBottom: 4 }
+                  : {}),
+              }}
+              className="text-base opacity-90 tracking-wide"
+            >
+              <RenderText line={lines[0]} />
+            </div>
+          </div>
+        )}
+
+        {lines[1].visible && lineText(lines[1]) && (
+          <div
+            style={{
+              ...lineColorStyle(lines[1]),
+              ...lineBgStyle(lines[1]),
+              fontWeight: 900,
+              textShadow: "2px 2px 4px rgba(0,0,0,0.9)",
+              whiteSpace: lineWhitespace(lines[1]),
+              ...(lines[1].showBackground
+                ? {
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    paddingTop: 6,
+                    paddingBottom: 6,
+                    display: "inline-block",
+                  }
+                : {}),
+            }}
+            className="text-4xl mb-2 tracking-tight leading-tight"
+          >
+            <RenderText line={lines[1]} />
+          </div>
+        )}
+
+        <div className={`mt-1 space-y-2 flex flex-col ${itemsClass}`}>
+          {middleLines.map(
+            (line, i) =>
+              line.visible &&
+              lineText(line) && (
+                <div
+                  key={i + 2}
+                  ref={(el) => {
+                    rowRefs.current[i] = el;
+                  }}
+                  className="py-2.5 text-center inline-block"
+                  style={{
+                    ...lineColorStyle(line),
+                    ...lineBgStyle(line),
+                    width: maxRowWidth > 0 ? `${maxRowWidth}px` : "auto",
+                    fontWeight: 900,
+                    textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                    letterSpacing: "0.02em",
+                    whiteSpace: lineWhitespace(line),
+                    paddingLeft: 20,
+                    paddingRight: 20,
+                  }}
+                >
+                  <RenderText line={line} />
+                </div>
+              ),
+          )}
+        </div>
+
+        {setsLine && setsVisible && isSetsLine(setsLine) && setsLine.sets[setIndex] && (
+          <div className={`mt-2 flex flex-col ${itemsClass}`}>
+            <div
+              className="relative inline-block"
+              style={{ overflow: "hidden", ...lineBgStyle(setsLine) }}
+            >
+              <div
+                className="py-2.5 px-5 text-left inline-block relative"
+                style={{
+                  fontWeight: 900,
+                  textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                  letterSpacing: "0.02em",
+                  whiteSpace: "nowrap",
+                  color: setsLine.color || "#FFFFFF",
+                  opacity: setFading ? 0 : 1,
+                  transform: setFading ? "translateY(-100%)" : "translateY(0)",
+                  filter: setFading ? "blur(8px)" : "blur(0px)",
+                  transition:
+                    "opacity 850ms ease-out, transform 850ms ease-out, filter 850ms ease-out",
+                  willChange: "opacity, transform, filter",
+                  zIndex: 1,
+                }}
+              >
+                <span style={{ fontWeight: 900 }}>
+                  ▶SET{setsLine.sets[setIndex].setNumber}:
+                </span>
+                <span style={{ fontWeight: 600 }}>
+                  {setsLine.sets[setIndex].killerName}（{setsLine.sets[setIndex].playerName}）
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 右下のパーク隠しカバー */}
+      {perkCover?.enabled && (
+        <PerkCoverView
+          pc={perkCover}
+          now={now}
+          editable={editable}
+          onMove={onMovePerkCover}
+        />
+      )}
+
+      {/* 左下のマッチタイマー */}
+      {matchTimer?.enabled && (
+        <MatchTimerView
+          mt={matchTimer}
+          now={now}
+          editable={editable}
+          onMove={onMoveMatchTimer}
+        />
+      )}
+    </div>
+  );
+}

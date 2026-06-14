@@ -1,0 +1,161 @@
+export type Segment = { text: string; color: string };
+
+export type LineBase = {
+  visible: boolean;
+  showBackground?: boolean;
+  backgroundColor?: string;
+  backgroundOpacity?: number;
+};
+
+export type TextLine = LineBase & {
+  text?: string;
+  color?: string;
+  segments?: Segment[];
+};
+
+export type SetEntry = {
+  setNumber: number;
+  killerName: string;
+  playerName: string;
+};
+
+export type SetsLine = LineBase & {
+  text?: string;
+  color?: string;
+  sets: SetEntry[];
+};
+
+export type Line = TextLine | SetsLine;
+
+export type Align = "left" | "center" | "right";
+
+// 1920x1080 フレームに対する % (0–100)
+export type Rect = { x: number; y: number; width: number; height: number };
+
+// 開始/停止/リセットできるストップウォッチの共通状態
+// 経過 = accumulatedMs + (running && startedAt ? now - startedAt : 0)
+export type StopwatchState = {
+  startedAt: number | null; // epoch ms（稼働中のみ）
+  accumulatedMs: number;
+  running: boolean;
+};
+
+export type PerkCoverFit = "contain" | "cover" | "fill";
+
+// カバーの形状
+export type PerkCoverShape = "diamond" | "roundedSquare" | "circle" | "hexagon";
+
+// 開放アニメーション
+export type PerkCoverReveal = "fade" | "iris" | "slideDown" | "dissolve" | "flash";
+
+/** 枠グローの表現スタイル(単一選択)。V2から導入。boolean排他の組合せを型レベルで防ぐ。 */
+export type PerkCoverGlowStyle =
+  | "solid" // 単色グロー(回転なし)。旧 glow-static
+  | "neon" // 1色のネオン明滅。旧 neonPulse
+  | "rainbow" // 虹色 conic 回転
+  | "flow" // 単色 + 白ハイライト回転
+  | "audio"; // 音量に反応して脈動
+
+/** "audio" スタイル時の入力・反応設定 */
+export type AudioReactiveConfig = {
+  /** 入力デバイス ID(undefined ならブラウザ規定) */
+  deviceId?: string;
+  /** 反応の閾値(0..1)。これ未満は反応しない */
+  threshold: number;
+  /** ゲイン倍率(0..3)。マイクが小さい人向け */
+  gain: number;
+  /** 周波数帯。"all" は RMS 全帯域、"bass" は ~200Hz以下、"treble" は ~4kHz以上 */
+  band: "all" | "bass" | "treble";
+};
+
+export type PerkCoverGlow = {
+  enabled: boolean;
+  style: PerkCoverGlowStyle;
+  colorByTimer: boolean; // 残時間で色変化(灰→黄→赤)。どの style にも乗る直交修飾
+  color: string;
+  /** 既存スタイル: 回転速度。audio: 反応のなめらかさ(smoothing) */
+  speedSec: number;
+  /** audio スタイル時のみ参照 */
+  audio?: AudioReactiveConfig;
+
+  // ---- Legacy fields(読み取り専用 / 互換のため残置)----
+  // 古い JSON / localStorage から読むときに style を推論するためだけに残す。
+  // 新規保存ではこれらは書かない(normalizePerkCover で削ぎ落とす)。
+  /** @deprecated Use `style` instead */
+  neonPulse?: boolean;
+  /** @deprecated Use `style` instead */
+  rainbow?: boolean;
+  /** @deprecated Use `style` instead */
+  flow?: boolean;
+};
+
+// カウントダウンの表示位置（カバーに対して。下は画面外に切れるため不採用）
+export type CountdownPos = "top" | "topLeft" | "left" | "bottomLeft";
+
+export type PerkCoverTimer = StopwatchState & {
+  enabled: boolean;
+  durationSec: number; // 制限時間（分＋秒入力 → 秒で保持）
+  showCountdown: boolean;
+  countdownColor: string;
+  countdownPos: CountdownPos;
+  /** 残り <= urgentBelowSec で警告演出（カウントダウン点滅） */
+  urgentPulse?: boolean;
+  urgentBelowSec?: number;
+};
+
+// 右下のパーク隠しカバー
+export type PerkCover = Rect & {
+  enabled: boolean;
+  image: string | null; // data URL
+  fit: PerkCoverFit;
+  backgroundColor: string;
+  opacity: number; // 0–1（100%で完全に隠れる）
+  glow: PerkCoverGlow;
+  timer: PerkCoverTimer;
+  /** カバーの形 */
+  shape?: PerkCoverShape;
+  /** 開放アニメーション */
+  reveal?: PerkCoverReveal;
+  /** 開放アニメーションの所要 ms */
+  revealDurationMs?: number;
+  /**
+   * ホットキー / リモコンで強制開放されたフラグ。
+   * タイマー有無にかかわらず即時に reveal アニメを発動させたいときに使う。
+   * リビール後 3 秒程度で自動的に false へ戻す(次回利用のため)。
+   */
+  forceReleased?: boolean;
+};
+
+// 左下のマッチタイマー（カウントアップ）
+export type MatchTimer = StopwatchState & {
+  enabled: boolean;
+  x: number; // 位置 %（既定は画面左下）
+  y: number;
+  color: string;
+  fontScale: number;
+  label: string;
+};
+
+export type OverlaySettings = {
+  iconImage: string;
+  lines: Line[];
+  align?: Align;
+  perkCover?: PerkCover;
+  matchTimer?: MatchTimer;
+};
+
+export type Room = {
+  id: string;
+  name: string;
+  settings: OverlaySettings;
+  updatedAt: number;
+};
+
+export type AppPersistedState = {
+  rooms: Room[];
+  activeRoomId: string;
+  apiKey: string | null;
+};
+
+export const isSetsLine = (line: Line): line is SetsLine =>
+  Array.isArray((line as SetsLine).sets);

@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DBD パーク隠し ＋ マッチタイマー プレビュー（モックアップ）</title>
+<style>
+  /* 回転レインボー枠用：角度をアニメさせるためのカスタムプロパティ */
+  @property --ringAngle { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+  :root {
+    --bg: #0e0f12;
+    --panel: #15171c;
+    --panel2: #1d2027;
+    --line: #2a2e37;
+    --text: #e8eaed;
+    --muted: #9aa0aa;
+    --accent: #ff7a18;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    display: flex; height: 100vh; overflow: hidden;
+    background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+    font-size: 13px;
+  }
+
+  /* ===== 左：操作パネル ===== */
+  #panel {
+    width: 340px; flex: 0 0 340px; height: 100vh; overflow-y: auto;
+    background: var(--panel); border-right: 1px solid var(--line); padding: 14px 14px 40px;
+  }
+  #panel h1 { font-size: 15px; margin: 2px 0 4px; }
+  #panel .sub { color: var(--muted); font-size: 11px; margin-bottom: 12px; line-height: 1.5; }
+  .sec { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .sec > h2 { font-size: 12px; margin: 0 0 10px; letter-spacing: .04em; color: #cfd3da; text-transform: uppercase; }
+  .row { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+  .row label { flex: 0 0 92px; color: var(--muted); font-size: 12px; }
+  .row .val { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+  input[type="range"] { flex: 1; accent-color: var(--accent); }
+  input[type="color"] { width: 34px; height: 26px; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; padding: 0; }
+  input[type="number"], select {
+    background: #0f1115; color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 5px 7px; font-size: 12px; width: 64px;
+  }
+  select { width: auto; }
+  .switch { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; }
+  .switch input { display: none; }
+  .switch .track { width: 36px; height: 20px; border-radius: 999px; background: #3a3f4a; position: relative; transition: background .15s; flex: none; }
+  .switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(16px); }
+  .btn {
+    border: 1px solid var(--line); background: #232732; color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font-size: 12px; cursor: pointer; flex: 1;
+  }
+  .btn:hover { border-color: #3c424f; background: #2a2f3b; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a1206; font-weight: 700; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btns { display: flex; gap: 8px; }
+  .upload { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; cursor: pointer;
+            border: 1px dashed #3c424f; border-radius: 8px; padding: 9px; color: #cfd3da; }
+  .upload:hover { border-color: var(--accent); color: #fff; }
+  .hint { color: var(--muted); font-size: 11px; line-height: 1.5; margin-top: 6px; }
+  .chk { display: flex; flex-wrap: wrap; gap: 10px; }
+
+  /* ===== 右：ステージ（1920x1080 相当 16:9）===== */
+  #stageWrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 18px; min-width: 0; }
+  #stage {
+    position: relative; aspect-ratio: 16 / 9; background: #0a0b0d center/cover no-repeat;
+    box-shadow: 0 12px 40px rgba(0,0,0,.6); border-radius: 6px; overflow: hidden;
+  }
+  /* DBD 風の暗い森グラデ（スクショ未読込時の下絵） */
+  #stage.gradient {
+    background-image:
+      radial-gradient(120% 90% at 70% 15%, #20331f 0%, #0c130c 55%, #07090a 100%),
+      radial-gradient(80% 70% at 20% 90%, #1a2433 0%, transparent 60%);
+  }
+  .frameTag { position: absolute; top: 6px; left: 8px; font-size: 10px; color: rgba(255,255,255,.35); letter-spacing: .08em; }
+
+  /* ===== パーク隠しカバー ===== */
+  .cover { position: absolute; border-radius: 10px; overflow: hidden; transition: opacity .6s ease; }
+  .cover .inner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .cover .logo { width: 100%; height: 100%; }
+  .cover .countdown {
+    position: absolute; left: 0; right: 0; bottom: 7%; text-align: center;
+    font-weight: 800; font-size: clamp(11px, 2.4vw, 26px); text-shadow: 1px 1px 3px rgba(0,0,0,.9);
+    letter-spacing: .03em; pointer-events: none;
+  }
+  .cover.released { opacity: 0; }
+
+  /* グロー: ネオン点滅（box-shadow 呼吸） */
+  .cover.neon { animation: neonPulse var(--glowSpeed, 3s) ease-in-out infinite; }
+  .cover.neon:not(.rainbow) { border: 3px solid var(--glow, #00BFFF); }
+  @keyframes neonPulse {
+    0%, 100% { box-shadow: 0 0 6px var(--glow), 0 0 14px var(--glow); }
+    50%      { box-shadow: 0 0 18px var(--glow), 0 0 40px var(--glow); }
+  }
+  /* グロー: 単色枠（点滅なし） */
+  .cover.solidglow:not(.rainbow):not(.neon) { border: 3px solid var(--glow, #00BFFF); }
+
+  /* グロー: 流れる虹色ボーダー（border-box に conic-gradient、角度をアニメ） */
+  .cover.rainbow {
+    border: 3px solid transparent;
+    background:
+      linear-gradient(var(--coverBg), var(--coverBg)) padding-box,
+      conic-gradient(from var(--ringAngle), #ff004c, #ff7a18, #ffe600, #29ff5e, #00e5ff, #2f6bff, #c04cff, #ff004c) border-box;
+    animation: ringSpin var(--glowSpeed, 3s) linear infinite;
+  }
+  @keyframes ringSpin { to { --ringAngle: 360deg; } }
+
+  /* ===== マッチタイマー（左下のイメージ） ===== */
+  .matchTimer {
+    position: absolute; display: inline-flex; flex-direction: column; align-items: flex-start;
+    font-weight: 900; font-variant-numeric: tabular-nums; text-shadow: 2px 2px 4px rgba(0,0,0,.9);
+    background: rgba(0,0,0,.42); padding: 6px 12px; border-radius: 8px; line-height: 1.05;
+  }
+  .matchTimer .lbl { font-size: .42em; font-weight: 700; letter-spacing: .12em; opacity: .85; }
+</style>
+</head>
+<body>
+  <!-- ===================== 操作パネル ===================== -->
+  <div id="panel">
+    <h1>パーク隠し ＋ マッチタイマー</h1>
+    <div class="sub">
+      見た目・光り方・タイマー演出の確認用モックアップです（本体には未統合）。<br>
+      触ってみて、色/速さ/サイズ/文言などの要望を教えてください。
+    </div>
+
+    <!-- 試合コントロール（マスター） -->
+    <div class="sec">
+      <h2>試合コントロール</h2>
+      <div class="btns">
+        <button class="btn primary" id="mStart">▶ 試合開始</button>
+        <button class="btn" id="mStop">⏸ 停止</button>
+        <button class="btn" id="mReset">⟲ リセット</button>
+      </div>
+      <div class="hint">「試合開始」でマッチタイマー（カウントアップ）とパーク開放タイマー（カウントダウン）が同時に走ります。</div>
+    </div>
+
+    <!-- パーク隠し -->
+    <div class="sec">
+      <h2>パーク隠しカバー（右下）</h2>
+      <div class="row"><label class="switch"><input type="checkbox" id="pEnabled" checked><span class="track"></span></label><span>表示する</span></div>
+      <label class="upload" for="pImage">🖼 画像・ロゴをアップロード</label>
+      <input type="file" id="pImage" accept="image/*" hidden>
+      <div class="btns" style="margin-top:8px"><button class="btn" id="pImageClear">画像クリア</button></div>
+      <div class="row"><label>画像の収め方</label>
+        <select id="pFit"><option value="contain">contain（全体）</option><option value="cover">cover（埋める）</option><option value="fill">fill（伸縮）</option></select>
+      </div>
+      <div class="row"><label>背景色</label><input type="color" id="pBg" value="#0d0d0f"></div>
+      <div class="row"><label>不透明度</label><input type="range" id="pOpacity" min="0" max="1" step="0.01" value="0.92"><span class="val" id="pOpacityV">92%</span></div>
+      <div class="hint">※ 100% で下のパークが完全に隠れます。</div>
+      <div class="row"><label>プリセット</label>
+        <select id="pPreset">
+          <option value="1080p-80">1080p / HUD 80%（あなたの設定）</option>
+          <option value="1080p-100">1080p / HUD 100%</option>
+          <option value="manual">手動調整</option>
+        </select>
+      </div>
+      <div class="row"><label>位置 X</label><input type="range" id="pX" min="0" max="100" step="0.5" value="88.5"><span class="val" id="pXV">88.5</span></div>
+      <div class="row"><label>位置 Y</label><input type="range" id="pY" min="0" max="100" step="0.5" value="79"><span class="val" id="pYV">79</span></div>
+      <div class="row"><label>幅 W</label><input type="range" id="pW" min="5" max="60" step="0.5" value="10.5"><span class="val" id="pWV">10.5</span></div>
+      <div class="row"><label>高さ H</label><input type="range" id="pH" min="5" max="60" step="0.5" value="19"><span class="val" id="pHV">19</span></div>
+    </div>
+
+    <!-- 光る枠 -->
+    <div class="sec">
+      <h2>光る枠（グロー）</h2>
+      <div class="row"><label class="switch"><input type="checkbox" id="gEnabled" checked><span class="track"></span></label><span>枠を光らせる</span></div>
+      <div class="chk" style="margin:6px 0 4px">
+        <label class="switch"><input type="checkbox" id="gNeon" checked><span class="track"></span></label><span>ネオン点滅</span>
+      </div>
+      <div class="chk" style="margin:4px 0">
+        <label class="switch"><input type="checkbox" id="gRainbow"><span class="track"></span></label><span>流れる虹色</span>
+      </div>
+      <div class="chk" style="margin:4px 0">
+        <label class="switch"><input type="checkbox" id="gByTimer" checked><span class="track"></span></label><span>残時間で色変化（緑→赤）</span>
+      </div>
+      <div class="row"><label>グロー色</label><input type="color" id="gColor" value="#00BFFF"><span class="hint" style="margin:0">※虹色/残時間色がオン時はそちら優先</span></div>
+      <div class="row"><label>速さ(秒)</label><input type="range" id="gSpeed" min="0.6" max="8" step="0.1" value="3"><span class="val" id="gSpeedV">3.0</span></div>
+    </div>
+
+    <!-- 開放タイマー -->
+    <div class="sec">
+      <h2>開放タイマー（カウントダウン）</h2>
+      <div class="row"><label class="switch"><input type="checkbox" id="tEnabled" checked><span class="track"></span></label><span>有効にする</span></div>
+      <div class="row"><label>制限時間</label>
+        <input type="number" id="tMin" min="0" max="60" value="1"> 分
+        <input type="number" id="tSec" min="0" max="59" value="0"> 秒
+      </div>
+      <div class="row"><label class="switch"><input type="checkbox" id="tShow" checked><span class="track"></span></label><span>残り時間を表示</span></div>
+      <div class="row"><label>文字色</label><input type="color" id="tColor" value="#ffffff"></div>
+      <div class="hint">0 になるとカバーがフェードアウトして開放されます。</div>
+    </div>
+
+    <!-- マッチタイマー -->
+    <div class="sec">
+      <h2>マッチタイマー（左下・カウントアップ）</h2>
+      <div class="row"><label class="switch"><input type="checkbox" id="msEnabled" checked><span class="track"></span></label><span>表示する</span></div>
+      <div class="row"><label>ラベル</label><input type="text" id="msLabel" value="MATCH TIME" style="flex:1;background:#0f1115;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 7px;font-size:12px"></div>
+      <div class="row"><label>文字色</label><input type="color" id="msColor" value="#ffffff"></div>
+      <div class="row"><label>サイズ</label><input type="range" id="msScale" min="0.6" max="2.4" step="0.05" value="1.2"><span class="val" id="msScaleV">1.2</span></div>
+      <div class="row"><label>位置 X</label><input type="range" id="msX" min="0" max="100" step="0.5" value="3"><span class="val" id="msXV">3</span></div>
+      <div class="row"><label>位置 Y</label><input type="range" id="msY" min="0" max="100" step="0.5" value="88"><span class="val" id="msYV">88</span></div>
+    </div>
+
+    <!-- 背景（下絵） -->
+    <div class="sec">
+      <h2>プレビュー背景</h2>
+      <label class="upload" for="bgImage">🖼 自分のDBDスクショを下絵に読込</label>
+      <input type="file" id="bgImage" accept="image/*" hidden>
+      <div class="btns" style="margin-top:8px"><button class="btn" id="bgClear">下絵をクリア（DBD風グラデに戻す）</button></div>
+    </div>
+  </div>
+
+  <!-- ===================== ステージ ===================== -->
+  <div id="stageWrap">
+    <div id="stage" class="gradient">
+      <div class="frameTag">1920 × 1080 (16:9) PREVIEW</div>
+
+      <div class="cover" id="cover">
+        <div class="inner"><img class="logo" id="coverLogo" alt="" style="display:none"></div>
+        <div class="countdown" id="countdown"></div>
+      </div>
+
+      <div class="matchTimer" id="matchTimer">
+        <span class="lbl" id="msLabelOut">MATCH TIME</span>
+        <span id="msTime">00:00</span>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+
+  // ---- 状態 ----
+  const state = {
+    perk: {
+      enabled: true, image: null, fit: "contain",
+      bg: "#0d0d0f", opacity: 0.92,
+      x: 88.5, y: 79, w: 10.5, h: 19,
+      glow: { enabled: true, neon: true, rainbow: false, byTimer: true, color: "#00BFFF", speed: 3 },
+      timer: { enabled: true, durationSec: 60, show: true, color: "#ffffff",
+               startedAt: null, accMs: 0, running: false },
+    },
+    match: { enabled: true, label: "MATCH TIME", color: "#ffffff", scale: 1.2, x: 3, y: 88,
+             startedAt: null, accMs: 0, running: false },
+  };
+
+  // ---- ストップウォッチ計算 ----
+  const elapsedMs = (sw) => sw.accMs + (sw.running && sw.startedAt ? Date.now() - sw.startedAt : 0);
+  const swStart = (sw) => { if (!sw.running) { sw.startedAt = Date.now(); sw.running = true; } };
+  const swStop  = (sw) => { if (sw.running) { sw.accMs += Date.now() - sw.startedAt; sw.startedAt = null; sw.running = false; } };
+  const swReset = (sw) => { sw.accMs = 0; sw.startedAt = null; sw.running = false; };
+
+  const fmtDown = (s) => { s = Math.max(0, Math.ceil(s)); const m = Math.floor(s/60); return m + ":" + String(s%60).padStart(2,"0"); };
+  const fmtUp = (s) => { s = Math.floor(s); const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), ss = s%60;
+    const mm = String(m).padStart(2,"0"), sss = String(ss).padStart(2,"0");
+    return h > 0 ? h + ":" + mm + ":" + sss : mm + ":" + sss; };
+
+  const hexToRgba = (hex, a) => {
+    const r = parseInt(hex.slice(1,3),16)||0, g = parseInt(hex.slice(3,5),16)||0, b = parseInt(hex.slice(5,7),16)||0;
+    return `rgba(${r},${g},${b},${a})`;
+  };
+
+  // ---- 描画 ----
+  const coverEl = $("cover"), logoEl = $("coverLogo"), cdEl = $("countdown");
+  const mtEl = $("matchTimer"), mtTime = $("msTime"), mtLbl = $("msLabelOut");
+
+  function render() {
+    const p = state.perk;
+
+    // パークカバー基本
+    coverEl.style.display = p.enabled ? "block" : "none";
+    coverEl.style.left = p.x + "%"; coverEl.style.top = p.y + "%";
+    coverEl.style.width = p.w + "%"; coverEl.style.height = p.h + "%";
+    const coverBg = hexToRgba(p.bg, p.opacity);
+    coverEl.style.setProperty("--coverBg", coverBg);
+    coverEl.style.background = coverBg; // 虹色クラス時は CSS が上書き
+
+    // 画像
+    if (p.image) { logoEl.src = p.image; logoEl.style.display = "block"; logoEl.style.objectFit = p.fit; }
+    else { logoEl.style.display = "none"; }
+
+    // タイマー（残り時間）
+    const t = p.timer;
+    let remaining = t.durationSec - elapsedMs(t) / 1000;
+    const started = t.running || t.accMs > 0;
+    const released = t.enabled && started && remaining <= 0;
+
+    // グロー色（残時間で色変化が最優先で色を決める）
+    const g = p.glow;
+    let glowColor = g.color;
+    if (g.byTimer && t.enabled) {
+      const ratio = t.durationSec > 0 ? Math.max(0, Math.min(1, remaining / t.durationSec)) : 0;
+      glowColor = `hsl(${Math.round(120 * ratio)}, 100%, 55%)`; // 120=緑 → 0=赤
+    }
+    coverEl.style.setProperty("--glow", glowColor);
+    coverEl.style.setProperty("--glowSpeed", g.speed + "s");
+
+    coverEl.classList.toggle("neon", g.enabled && g.neon);
+    coverEl.classList.toggle("rainbow", g.enabled && g.rainbow);
+    coverEl.classList.toggle("solidglow", g.enabled && !g.neon && !g.rainbow);
+    coverEl.classList.toggle("released", released);
+
+    // カウントダウン表示
+    if (t.enabled && t.show && !released) {
+      cdEl.style.display = "block";
+      cdEl.style.color = t.color;
+      cdEl.textContent = "公開まで " + fmtDown(remaining);
+    } else { cdEl.style.display = "none"; }
+
+    // マッチタイマー
+    const m = state.match;
+    mtEl.style.display = m.enabled ? "inline-flex" : "none";
+    mtEl.style.left = m.x + "%"; mtEl.style.top = m.y + "%";
+    mtEl.style.color = m.color; mtEl.style.fontSize = (m.scale * 22) + "px";
+    mtLbl.textContent = m.label; mtLbl.style.display = m.label ? "block" : "none";
+    mtTime.textContent = fmtUp(elapsedMs(m) / 1000);
+  }
+
+  // 250ms ごとに更新（どれか稼働中のみ）
+  setInterval(() => {
+    if (state.perk.timer.running || state.match.running) render();
+  }, 250);
+
+  // ---- 入力バインド ----
+  const bindRange = (id, vid, fmt) => (cb) => { const el=$(id), v=vid?$(vid):null;
+    el.addEventListener("input", () => { cb(parseFloat(el.value)); if (v) v.textContent = fmt?fmt(el.value):el.value; render(); }); };
+
+  // 試合コントロール（マスター）
+  $("mStart").onclick = () => { swStart(state.perk.timer); swStart(state.match); render(); };
+  $("mStop").onclick  = () => { swStop(state.perk.timer); swStop(state.match); render(); };
+  $("mReset").onclick = () => { swReset(state.perk.timer); swReset(state.match); render(); };
+
+  // パーク隠し
+  $("pEnabled").onchange = (e) => { state.perk.enabled = e.target.checked; render(); };
+  $("pFit").onchange = (e) => { state.perk.fit = e.target.value; render(); };
+  $("pBg").oninput = (e) => { state.perk.bg = e.target.value; render(); };
+  bindRange("pOpacity","pOpacityV", v => Math.round(v*100)+"%")(v => state.perk.opacity = v);
+  bindRange("pX","pXV")(v => { state.perk.x = v; $("pPreset").value = "manual"; });
+  bindRange("pY","pYV")(v => { state.perk.y = v; $("pPreset").value = "manual"; });
+  bindRange("pW","pWV")(v => { state.perk.w = v; $("pPreset").value = "manual"; });
+  bindRange("pH","pHV")(v => { state.perk.h = v; $("pPreset").value = "manual"; });
+
+  // 解像度 / HUDスケール プリセット（実測ベース）。スライダーで微調整すると「手動調整」になる。
+  const PERK_PRESETS = {
+    "1080p-80":  { x: 88.5, y: 79, w: 10.5, h: 19 },  // 1920x1080 / HUD 80%
+    "1080p-100": { x: 86,   y: 74, w: 13,   h: 24 },  // 1920x1080 / HUD 100%
+  };
+  const setRange = (id, vid, value) => { const el = $(id); if (!el) return; el.value = value; if (vid && $(vid)) $(vid).textContent = value; };
+  const applyPerkPreset = (key) => { const p = PERK_PRESETS[key]; if (!p) return; Object.assign(state.perk, p);
+    setRange("pX","pXV",p.x); setRange("pY","pYV",p.y); setRange("pW","pWV",p.w); setRange("pH","pHV",p.h); render(); };
+  $("pPreset").onchange = (e) => { if (e.target.value !== "manual") applyPerkPreset(e.target.value); };
+  $("pImage").onchange = (e) => { const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => { state.perk.image = r.result; render(); }; r.readAsDataURL(f); };
+  $("pImageClear").onclick = () => { state.perk.image = null; $("pImage").value = ""; render(); };
+
+  // グロー
+  $("gEnabled").onchange = (e) => { state.perk.glow.enabled = e.target.checked; render(); };
+  $("gNeon").onchange = (e) => { state.perk.glow.neon = e.target.checked; render(); };
+  $("gRainbow").onchange = (e) => { state.perk.glow.rainbow = e.target.checked; render(); };
+  $("gByTimer").onchange = (e) => { state.perk.glow.byTimer = e.target.checked; render(); };
+  $("gColor").oninput = (e) => { state.perk.glow.color = e.target.value; render(); };
+  bindRange("gSpeed","gSpeedV", v => parseFloat(v).toFixed(1))(v => state.perk.glow.speed = v);
+
+  // 開放タイマー
+  const recalcDuration = () => { state.perk.timer.durationSec = (parseInt($("tMin").value)||0)*60 + (parseInt($("tSec").value)||0); render(); };
+  $("tEnabled").onchange = (e) => { state.perk.timer.enabled = e.target.checked; render(); };
+  $("tMin").oninput = recalcDuration; $("tSec").oninput = recalcDuration;
+  $("tShow").onchange = (e) => { state.perk.timer.show = e.target.checked; render(); };
+  $("tColor").oninput = (e) => { state.perk.timer.color = e.target.value; render(); };
+
+  // マッチタイマー
+  $("msEnabled").onchange = (e) => { state.match.enabled = e.target.checked; render(); };
+  $("msLabel").oninput = (e) => { state.match.label = e.target.value; render(); };
+  $("msColor").oninput = (e) => { state.match.color = e.target.value; render(); };
+  bindRange("msScale","msScaleV", v => parseFloat(v).toFixed(2))(v => state.match.scale = v);
+  bindRange("msX","msXV")(v => state.match.x = v);
+  bindRange("msY","msYV")(v => state.match.y = v);
+
+  // 背景（下絵）
+  const stage = $("stage");
+  $("bgImage").onchange = (e) => { const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => { stage.classList.remove("gradient"); stage.style.backgroundImage = `url(${r.result})`; }; r.readAsDataURL(f); };
+  $("bgClear").onclick = () => { stage.style.backgroundImage = ""; stage.classList.add("gradient"); $("bgImage").value = ""; };
+
+  render();
+})();
+</script>
+</body>
+</html>

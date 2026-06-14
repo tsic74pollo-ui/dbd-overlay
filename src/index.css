@@ -1,0 +1,269 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gray-750: #2d3540;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans JP", sans-serif;
+}
+
+body {
+  background: #0b0c10;
+  color: #fff;
+}
+
+/* Overlay route is fully transparent — applied via class on body when /overlay */
+body.overlay-route {
+  background: transparent;
+}
+
+body.overlay-route.preview {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #1a1a1a 0,
+      #1a1a1a 14px,
+      #232323 14px,
+      #232323 28px
+    );
+}
+
+input[type="color"] {
+  -webkit-appearance: none;
+  border: none;
+  padding: 0;
+  background: transparent;
+}
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"]::-webkit-color-swatch {
+  border: 1px solid #4b5563;
+  border-radius: 4px;
+}
+
+/* ===== パーク隠しカバー（OverlayView 内）===== */
+/* 4パークの並びに合わせたひし形カバー。frame(外)とinner(内)の差分が光る枠になる。 */
+/* 回転グラデ用：角度をアニメさせるためのカスタムプロパティ */
+@property --ringAngle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.perk-cover {
+  position: absolute;
+  /* 既定は fade。reveal-* クラスで上書きされる */
+  transition: opacity var(--revealMs, 600ms) ease;
+}
+
+/* === Editor-only affordance: draggable element on the preview === */
+.edit-draggable {
+  cursor: grab;
+  outline: 1px dashed rgba(255, 165, 0, 0.5);
+  outline-offset: 2px;
+  transition: outline-color 120ms ease, box-shadow 120ms ease;
+  touch-action: none;
+}
+.edit-draggable:hover {
+  outline-color: rgba(255, 165, 0, 0.9);
+  box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.12);
+}
+.edit-draggable:active {
+  cursor: grabbing;
+  outline-color: rgba(255, 165, 0, 1);
+}
+
+/* === 開放アニメーション === */
+/* fade（既定）: そのまま transition で opacity 0 */
+.perk-cover.reveal-fade.released {
+  opacity: 0;
+}
+/* iris: clip-path で内側に閉じていく（カメラ絞りのように消える） */
+.perk-cover.reveal-iris {
+  transition:
+    clip-path var(--revealMs, 600ms) ease-in,
+    opacity var(--revealMs, 600ms) linear;
+}
+.perk-cover.reveal-iris.released {
+  clip-path: inset(50% 50% 50% 50%);
+  opacity: 0;
+}
+/* slideDown: 下に滑って消える */
+.perk-cover.reveal-slideDown {
+  transition:
+    transform var(--revealMs, 600ms) ease-in,
+    opacity var(--revealMs, 600ms) linear;
+}
+.perk-cover.reveal-slideDown.released {
+  transform: translateY(140%);
+  opacity: 0;
+}
+/* dissolve: ぼかしながら消える */
+.perk-cover.reveal-dissolve {
+  transition:
+    filter var(--revealMs, 600ms) ease,
+    opacity var(--revealMs, 600ms) linear;
+}
+.perk-cover.reveal-dissolve.released {
+  filter: blur(28px) brightness(0.5);
+  opacity: 0;
+}
+/* flash: 拡大＋発光しながら消える */
+.perk-cover.reveal-flash {
+  transition:
+    transform var(--revealMs, 600ms) ease-out,
+    filter calc(var(--revealMs, 600ms) * 0.55) ease-out,
+    opacity var(--revealMs, 600ms) ease-in;
+}
+.perk-cover.reveal-flash.released {
+  transform: scale(1.45);
+  filter: brightness(3.2);
+  opacity: 0;
+}
+
+/* 外側のひし形（枠＝光る部分）。背景はインラインで指定（単色/虹色/流れる指定色） */
+.perk-diamond-frame {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+/* 内側のひし形（カバー本体＝背景色＋画像）。frame との差分が枠幅 */
+.perk-diamond-inner {
+  position: absolute;
+  inset: var(--ringW, 5px);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: var(--coverBg, rgba(13, 13, 15, 0.92));
+  overflow: hidden;
+}
+.perk-diamond-inner img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* グロー: 単色（静的に少しだけ光らせる） */
+.perk-diamond-frame.glow-static {
+  filter: drop-shadow(0 0 6px var(--glow));
+}
+/* グロー: ネオン点滅（drop-shadow がひし形の輪郭に沿う） */
+.perk-diamond-frame.neon {
+  animation: perkNeonPulse var(--glowSpeed, 3s) ease-in-out infinite;
+}
+/* グロー: 流れる（虹色 / 指定色）。conic-gradient の角度を回す */
+.perk-diamond-frame.spin {
+  animation: perkRingSpin var(--glowSpeed, 3s) linear infinite;
+}
+/* ネオン＋流れるを同時有効化したら両アニメを併走 */
+.perk-diamond-frame.spin.neon {
+  animation:
+    perkRingSpin var(--glowSpeed, 3s) linear infinite,
+    perkNeonPulse var(--glowSpeed, 3s) ease-in-out infinite;
+}
+@keyframes perkNeonPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 8px var(--glow));
+  }
+  50% {
+    filter: drop-shadow(0 0 11px var(--glow)) drop-shadow(0 0 22px var(--glow));
+  }
+}
+@keyframes perkRingSpin {
+  to {
+    --ringAngle: 360deg;
+  }
+}
+
+/* グロー: オーディオ反応(level は OverlayView で --audio-level を 0..1 で注入) */
+.perk-diamond-frame.audio {
+  --audio-l: var(--audio-level, 0);
+  filter:
+    drop-shadow(0 0 calc(2px + 14px * var(--audio-l)) var(--glow))
+    drop-shadow(0 0 calc(4px + 28px * var(--audio-l)) var(--glow))
+    brightness(calc(0.85 + 0.45 * var(--audio-l)));
+  transition: filter 70ms linear;
+}
+
+/* 開放タイマー：カバーと同じ矩形をアンカーにし、その「枠外・下」に数字だけ表示 */
+.perk-countdown-anchor {
+  position: absolute;
+  container-type: size; /* 文字サイズをカバー高さ基準(cqh)で拡縮 */
+  pointer-events: none;
+}
+.perk-countdown {
+  position: absolute;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(9px, 18cqh, 48px);
+  letter-spacing: 0.02em;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+}
+/* カバーに対する配置（下は画面外に切れるため無し） */
+.perk-countdown.pos-top {
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, -20%);
+}
+.perk-countdown.pos-topLeft {
+  right: 100%;
+  top: 0;
+  transform: translate(-15%, 0);
+}
+.perk-countdown.pos-left {
+  right: 100%;
+  top: 50%;
+  transform: translate(-15%, -50%);
+}
+.perk-countdown.pos-bottomLeft {
+  right: 100%;
+  bottom: 0;
+  transform: translate(-15%, 0);
+}
+
+/* 残り時間が少ないときの警告点滅（位置の transform は維持したまま色と透明度を変える） */
+.perk-countdown.urgent {
+  animation: perkCountdownUrgent 0.55s ease-in-out infinite;
+}
+@keyframes perkCountdownUrgent {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 4px currentColor);
+  }
+  50% {
+    opacity: 0.45;
+    filter: drop-shadow(0 0 12px currentColor);
+  }
+}
+
+/* ===== カバーの形状 ===== */
+/* shape は perk-cover の親要素に shape-{name} クラスとして付く。
+   既存の perk-diamond-{frame,inner} の clip-path を上書きする。 */
+.shape-roundedSquare .perk-diamond-frame,
+.shape-roundedSquare .perk-diamond-inner {
+  clip-path: none;
+  border-radius: 18%;
+}
+.shape-circle .perk-diamond-frame,
+.shape-circle .perk-diamond-inner {
+  clip-path: none;
+  border-radius: 50%;
+}
+.shape-hexagon .perk-diamond-frame,
+.shape-hexagon .perk-diamond-inner {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  border-radius: 0;
+}
+/* diamond は既存定義のまま（明示クラス無しでも動く） */
+
