@@ -23,6 +23,8 @@ import { MatchControls } from "@/components/MatchControls";
 import { PerkCoverEditor } from "@/components/PerkCoverEditor";
 import { MatchTimerEditor } from "@/components/MatchTimerEditor";
 import { SessionTimerEditor } from "@/components/SessionTimerEditor";
+import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
+import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
 import { HotkeySettings } from "@/components/HotkeySettings";
 
@@ -70,6 +72,10 @@ export function SettingsPanel() {
       <RemoteUrlPanel />
 
       <HotkeySettings />
+
+      <ObsConnectionPanel />
+
+      <RoomActivationEditor />
 
       <MatchControls />
 

@@ -171,12 +171,24 @@ export type Room = {
   name: string;
   settings: OverlaySettings;
   updatedAt: number;
+  /** このルームをアクティブ化したとき切替える OBS のシーン名。空/未設定で OBS 連動オフ。 */
+  obsSceneName?: string;
+  /** このルームをアクティブ化したときマッチタイマーを 0 にリセットするか。例: マッチ画面に戻る度に新マッチで自動 0 開始したい用途。 */
+  resetMatchTimerOnActivate?: boolean;
+};
+
+/** OBS WebSocket 連携(アプリ全体設定。ルームごとではない)。 */
+export type ObsConfig = {
+  enabled: boolean;
+  url: string; // 例: ws://127.0.0.1:4455
+  password: string;
 };
 
 export type AppPersistedState = {
   rooms: Room[];
   activeRoomId: string;
   apiKey: string | null;
+  obs: ObsConfig;
 };
 
 export const isSetsLine = (line: Line): line is SetsLine =>

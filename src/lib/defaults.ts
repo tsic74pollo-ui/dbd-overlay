@@ -1,6 +1,7 @@
 import type {
   Line,
   MatchTimer,
+  ObsConfig,
   OverlaySettings,
   PerkCover,
   PerkCoverGlow,
@@ -258,4 +259,11 @@ export const newRoom = (name = "新しいルーム"): Room => ({
   name,
   settings: defaultSettings(),
   updatedAt: Date.now(),
+});
+
+/** OBS 連携設定の既定値。url は OBS Studio 28+ の標準値。 */
+export const defaultObsConfig = (): ObsConfig => ({
+  enabled: false,
+  url: "ws://127.0.0.1:4455",
+  password: "",
 });

@@ -1,8 +1,15 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AppPersistedState, OverlaySettings, Room, SetsLine } from "@/lib/types";
+import type {
+  AppPersistedState,
+  ObsConfig,
+  OverlaySettings,
+  Room,
+  SetsLine,
+} from "@/lib/types";
 import { isSetsLine } from "@/lib/types";
 import {
+  defaultObsConfig,
   newRoom,
   normalizePerkCover,
   normalizeMatchTimer,
@@ -20,7 +27,11 @@ type AppActions = {
   updateActiveRoomSettings: (updater: (s: OverlaySettings) => OverlaySettings) => void;
   setRoomSettings: (id: string, settings: OverlaySettings) => void;
   setRooms: (rooms: Room[], activeRoomId?: string) => void;
+  /** ルーム本体の任意フィールドをパッチ更新(obsSceneName / resetMatchTimerOnActivate 等)。 */
+  patchRoom: (id: string, patch: Partial<Room>) => void;
   setApiKey: (key: string | null) => void;
+  /** OBS WebSocket 設定 */
+  setObsConfig: (patch: Partial<ObsConfig>) => void;
   /**
    * ホットキー / リモコン用の高レベルアクション。いずれも内部で
    * updateActiveRoomSettings を経由するので useRoomsSync 側の broadcast に
@@ -50,7 +61,23 @@ const buildInitialState = (): AppPersistedState => {
     rooms: [first],
     activeRoomId: first.id,
     apiKey: null,
+    obs: defaultObsConfig(),
   };
+};
+
+/** ルームをアクティブ化したときの副作用(マッチタイマー自動 reset 等)を適用する。
+ *  Optional に未設定なら no-op。OBS シーン切替は useObsConnection 側で行う(ストアから副作用呼ばない)。 */
+const applyActivation = (rooms: Room[], targetId: string): Room[] => {
+  return rooms.map((r) => {
+    if (r.id !== targetId) return r;
+    if (!r.resetMatchTimerOnActivate) return r;
+    const mt = normalizeMatchTimer(r.settings.matchTimer);
+    return {
+      ...r,
+      settings: { ...r.settings, matchTimer: resetSw({ ...mt, enabled: mt.enabled }) },
+      updatedAt: Date.now(),
+    };
+  });
 };
 
 export const useAppStore = create<AppStore>()(
@@ -93,7 +120,20 @@ export const useAppStore = create<AppStore>()(
           ),
         });
       },
-      setActiveRoom: (id) => set({ activeRoomId: id }),
+      setActiveRoom: (id) => {
+        const rooms = applyActivation(get().rooms, id);
+        set({ rooms, activeRoomId: id });
+      },
+      patchRoom: (id, patch) => {
+        set({
+          rooms: get().rooms.map((r) =>
+            r.id === id ? { ...r, ...patch, updatedAt: Date.now() } : r,
+          ),
+        });
+      },
+      setObsConfig: (patch) => {
+        set({ obs: { ...get().obs, ...patch } });
+      },
       updateActiveRoomSettings: (updater) => {
         const id = get().activeRoomId;
         set({
@@ -264,7 +304,9 @@ export const useAppStore = create<AppStore>()(
         if (rooms.length < 2) return;
         const idx = rooms.findIndex((r) => r.id === activeRoomId);
         const nextIdx = (idx + dir + rooms.length) % rooms.length;
-        set({ activeRoomId: rooms[nextIdx].id });
+        const nextId = rooms[nextIdx].id;
+        const activated = applyActivation(rooms, nextId);
+        set({ rooms: activated, activeRoomId: nextId });
       },
     }),
     {
@@ -273,7 +315,17 @@ export const useAppStore = create<AppStore>()(
         rooms: s.rooms,
         activeRoomId: s.activeRoomId,
         apiKey: s.apiKey,
+        obs: s.obs,
       }),
+      // 古い localStorage に obs が無いケースに備えて merge を明示
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<AppPersistedState>;
+        return {
+          ...current,
+          ...p,
+          obs: { ...defaultObsConfig(), ...(p.obs ?? {}) },
+        } as AppPersistedState & typeof current;
+      },
     },
   ),
 );

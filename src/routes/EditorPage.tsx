@@ -13,9 +13,18 @@ import { useHotkeys } from "@/lib/useHotkeys";
 import { HotkeyToast } from "@/components/HotkeyToast";
 import { useRemoteCommandHost } from "@/lib/useRemoteCommandHost";
 import { useEffectiveHotkeys } from "@/lib/useEffectiveHotkeys";
+import { ObsConnectionProvider } from "@/lib/obsConnectionContext";
 import { useCallback } from "react";
 
 export function EditorPage() {
+  return (
+    <ObsConnectionProvider>
+      <EditorPageInner />
+    </ObsConnectionProvider>
+  );
+}
+
+function EditorPageInner() {
   const room = useAppStore(selectActiveRoom);
   const updateSettings = useAppStore((s) => s.updateActiveRoomSettings);
   const [apiKeyOpen, setApiKeyOpen] = useState(false);
