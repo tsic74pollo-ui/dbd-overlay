@@ -16,6 +16,7 @@ import { cn } from "@/lib/cn";
 import { useDraggablePercent } from "@/lib/useDraggablePercent";
 import { useAudioReactive } from "@/lib/useAudioReactive";
 import { MatchLogView } from "@/components/MatchLogView";
+import { LottiePlayer } from "@/components/LottiePlayer";
 
 type Props = {
   settings: OverlaySettings;
@@ -379,6 +380,7 @@ export function OverlayView({
   onMoveSessionTimer,
 }: Props) {
   const { iconImage, lines, perkCover, matchTimer, sessionTimer } = settings;
+  const lottie = settings.lottie;
   const [maxRowWidth, setMaxRowWidth] = useState(0);
   const [iconSize, setIconSize] = useState(40);
   const [autoSetIndex, setAutoSetIndex] = useState(0);
@@ -386,6 +388,10 @@ export function OverlayView({
   const [now, setNow] = useState(() => Date.now());
   const rowRefs = useRef<(HTMLDivElement | null)[]>([]);
   const titleRef = useRef<HTMLDivElement | null>(null);
+
+  // Lottie 再生シグナル: トリガーイベント発火ごとに 1 ずつ増やして子に通知
+  const [lottiePlaySignal, setLottiePlaySignal] = useState(0);
+  const prevMatchRunningRef = useRef<boolean>(!!matchTimer?.running);
 
   // タイマー稼働中のみ 250ms ごとに now を更新（local state なので broadcast しない）
   const timersRunning =
@@ -396,6 +402,23 @@ export function OverlayView({
     const id = window.setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [timersRunning]);
+
+  // Lottie トリガー: room-activate(マウント時に1回発火)
+  useEffect(() => {
+    if (!lottie?.enabled || lottie.trigger !== "room-activate") return;
+    setLottiePlaySignal((s) => s + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Lottie トリガー: match-start(matchTimer.running が false→true 遷移)
+  useEffect(() => {
+    if (!lottie?.enabled || lottie.trigger !== "match-start") return;
+    const cur = !!matchTimer?.running;
+    if (!prevMatchRunningRef.current && cur) {
+      setLottiePlaySignal((s) => s + 1);
+    }
+    prevMatchRunningRef.current = cur;
+  }, [matchTimer?.running, lottie?.enabled, lottie?.trigger]);
 
   // Equal width across rows 2-4
   useLayoutEffect(() => {
@@ -426,6 +449,7 @@ export function OverlayView({
   );
   const setIndex = cycleMode === "manual" ? manualSetIndex : autoSetIndex;
   const prevManualSetIndexRef = useRef(manualSetIndex);
+  const prevSetIndexRef = useRef(setIndex);
 
   // manual モード時の SET 切替にもフェード演出をかける(押した瞬間の見栄え)
   useEffect(() => {
@@ -436,6 +460,15 @@ export function OverlayView({
     const t = window.setTimeout(() => setSetFading(false), 380);
     return () => clearTimeout(t);
   }, [cycleMode, manualSetIndex]);
+
+  // Lottie トリガー: set-change(setIndex の変化を検知)
+  useEffect(() => {
+    if (!lottie?.enabled || lottie.trigger !== "set-change") return;
+    if (prevSetIndexRef.current !== setIndex) {
+      setLottiePlaySignal((s) => s + 1);
+    }
+    prevSetIndexRef.current = setIndex;
+  }, [setIndex, lottie?.enabled, lottie?.trigger]);
 
   // auto モード時は 3 秒ごとにフェード遷移して次のSETへ
   useEffect(() => {
@@ -630,6 +663,11 @@ export function OverlayView({
       {/* マッチログ(今日のスクリム結果) */}
       {settings.matchLog?.enabled && (
         <MatchLogView ml={settings.matchLog} editable={editable} />
+      )}
+
+      {/* Lottie アニメーション(イベント発火再生) */}
+      {lottie?.enabled && (
+        <LottiePlayer animation={lottie} playSignal={lottiePlaySignal} />
       )}
     </div>
   );

@@ -60,6 +60,37 @@ export type MatchLogWidget = {
   currentStartedAtSec: number | null;
 };
 
+/** Lottie アニメーションの発火タイミング。 */
+export type LottieTrigger =
+  /** このルームが activate した瞬間(ルーム切替) */
+  | "room-activate"
+  /** マッチタイマー開始時(idle → running 遷移) */
+  | "match-start"
+  /** SET 切替時(currentSetIndex の変化 or auto モードの自動切替) */
+  | "set-change";
+
+/** ルームに紐付ける Lottie アニメーション設定。
+ *  text-to-lottie Skill 等で生成した JSON を貼り付けて、特定イベント時に再生する。
+ *  V2.5 では 1 ルームあたり 1 アニメ。 */
+export type LottieAnimation = {
+  enabled: boolean;
+  /** Lottie JSON テキスト全文。空なら未設定扱い */
+  json: string;
+  /** 編集者向けのラベル(再生される表示には影響しない) */
+  name: string;
+  /** どのイベントで再生するか */
+  trigger: LottieTrigger;
+  /** 配置 % */
+  x: number;
+  y: number;
+  /** 表示サイズ %(横幅基準) */
+  width: number;
+  /** ループ再生(背景演出向き) */
+  loop: boolean;
+  /** 単発再生時、再生終了後にフェードアウトするミリ秒 */
+  fadeOutMs: number;
+};
+
 /** バイリンガル(第二テキスト)表示のルーム共通スタイル。全 TextLine の secondaryText に適用される。 */
 export type BilingualStyle = {
   /** 第二テキストの色。既定は半透明の白寄り灰色 */
@@ -225,6 +256,8 @@ export type OverlaySettings = {
   bilingualStyle?: BilingualStyle;
   /** 今日のスクリム結果ウィジェット */
   matchLog?: MatchLogWidget;
+  /** ルームに紐付ける Lottie アニメーション(イベント発火再生) */
+  lottie?: LottieAnimation;
 };
 
 export type Room = {

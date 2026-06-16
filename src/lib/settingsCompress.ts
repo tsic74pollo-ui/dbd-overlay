@@ -1,5 +1,6 @@
 import type {
   BilingualStyle,
+  LottieAnimation,
   MatchLogWidget,
   MatchTimer,
   OverlaySettings,
@@ -10,11 +11,13 @@ import type {
 } from "./types";
 import {
   defaultBilingualStyle,
+  defaultLottie,
   defaultMatchLog,
   defaultMatchTimer,
   defaultPerkCover,
   defaultSessionTimer,
   normalizeBilingualStyle,
+  normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
   normalizePerkCover,
@@ -114,6 +117,11 @@ export const compressSettings = (
     const c = stripObject(s.matchLog, defaultMatchLog());
     if (Object.keys(c).length > 0) out.matchLog = c as MatchLogWidget;
   }
+  if (s.lottie) {
+    // json は大きいが配列ではないので stripObject の通常パスで透過送信される
+    const c = stripObject(s.lottie, defaultLottie());
+    if (Object.keys(c).length > 0) out.lottie = c as LottieAnimation;
+  }
   return out;
 };
 
@@ -138,6 +146,9 @@ export const decompressSettings = (
       : undefined,
     matchLog: s.matchLog
       ? normalizeMatchLog(s.matchLog as Partial<MatchLogWidget>)
+      : undefined,
+    lottie: s.lottie
+      ? normalizeLottie(s.lottie as Partial<LottieAnimation>)
       : undefined,
   };
 };

@@ -2,6 +2,7 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
   normalizeBilingualStyle,
+  normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
   normalizePerkCover,
@@ -11,6 +12,7 @@ import type {
   Align,
   BilingualStyle,
   Line,
+  LottieAnimation,
   MatchLogWidget,
   MatchTimer,
   PerkCover,
@@ -29,6 +31,7 @@ import { MatchTimerEditor } from "@/components/MatchTimerEditor";
 import { SessionTimerEditor } from "@/components/SessionTimerEditor";
 import { BilingualStyleEditor } from "@/components/BilingualStyleEditor";
 import { MatchLogEditor } from "@/components/MatchLogEditor";
+import { LottieEditor } from "@/components/LottieEditor";
 import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
@@ -70,6 +73,10 @@ export function SettingsPanel() {
     update((s) => ({ ...s, matchLog: next }));
   };
 
+  const setLottie = (next: LottieAnimation) => {
+    update((s) => ({ ...s, lottie: next }));
+  };
+
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -102,6 +109,8 @@ export function SettingsPanel() {
       <MatchLogEditor value={normalizeMatchLog(settings.matchLog)} onChange={setMatchLog} />
 
       <BilingualStyleEditor value={normalizeBilingualStyle(settings.bilingualStyle)} onChange={setBilingualStyle} />
+
+      <LottieEditor value={normalizeLottie(settings.lottie)} onChange={setLottie} />
 
       <IconPicker iconImage={settings.iconImage} onChange={setIcon} />
 
