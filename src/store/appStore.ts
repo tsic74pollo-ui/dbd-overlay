@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   AppPersistedState,
+  MatchResult,
   ObsConfig,
   OverlaySettings,
   Room,
@@ -13,10 +14,11 @@ import {
   newRoom,
   normalizePerkCover,
   normalizeMatchTimer,
+  normalizeMatchLog,
   normalizeSessionTimer,
 } from "@/lib/defaults";
 import { tryLoadLegacy } from "@/lib/migrateLegacy";
-import { startSw, resetSw } from "@/lib/timer";
+import { startSw, resetSw, elapsedMs } from "@/lib/timer";
 
 type AppActions = {
   addRoom: (name?: string) => string;
@@ -32,6 +34,15 @@ type AppActions = {
   setApiKey: (key: string | null) => void;
   /** OBS WebSocket 設定 */
   setObsConfig: (patch: Partial<ObsConfig>) => void;
+  /** マッチ結果を 1 件記録 + matchTimer リセット + 現マッチクリア */
+  recordMatchResult: (input: {
+    result: string;
+    killer?: string;
+    player?: string;
+    isWin?: boolean;
+  }) => void;
+  /** 蓄積されたマッチ記録を全消去 */
+  clearMatchLog: () => void;
   /**
    * ホットキー / リモコン用の高レベルアクション。いずれも内部で
    * updateActiveRoomSettings を経由するので useRoomsSync 側の broadcast に
@@ -175,9 +186,25 @@ export const useAppStore = create<AppStore>()(
             const idle = !mt.running && mt.accumulatedMs === 0;
             const next = idle ? startSw(mt) : resetSw(mt);
             const ensured = { ...next, enabled: true };
+            // マッチログにも「進行中マッチ」 を反映
+            // idle → start: 新マッチ開始(currentMatchNo + currentStartedAtSec を記録)
+            // それ以外 → reset: 進行中マッチ破棄(currentMatchNo クリア)
+            const ml = normalizeMatchLog(r.settings.matchLog);
+            let nextMl = ml;
+            if (idle) {
+              const st = normalizeSessionTimer(r.settings.sessionTimer);
+              const startedAtSec = elapsedMs(st, Date.now()) / 1000;
+              const matchNo =
+                ml.records.length > 0
+                  ? Math.max(...ml.records.map((rec) => rec.matchNo)) + 1
+                  : 1;
+              nextMl = { ...ml, currentMatchNo: matchNo, currentStartedAtSec: startedAtSec };
+            } else {
+              nextMl = { ...ml, currentMatchNo: null, currentStartedAtSec: null };
+            }
             return {
               ...r,
-              settings: { ...r.settings, matchTimer: ensured },
+              settings: { ...r.settings, matchTimer: ensured, matchLog: nextMl },
               updatedAt: Date.now(),
             };
           }),
@@ -297,6 +324,92 @@ export const useAppStore = create<AppStore>()(
             }),
           });
         }, revealMs);
+      },
+
+      recordMatchResult: ({ result, killer, player, isWin }) => {
+        const id = get().activeRoomId;
+        set({
+          rooms: get().rooms.map((r) => {
+            if (r.id !== id) return r;
+            const ml = normalizeMatchLog(r.settings.matchLog);
+            const mt = normalizeMatchTimer(r.settings.matchTimer);
+            const st = normalizeSessionTimer(r.settings.sessionTimer);
+            const now = Date.now();
+            const endedAtSec = elapsedMs(st, now) / 1000;
+            const matchDurationSec = elapsedMs(mt, now) / 1000;
+            const startedAtSec =
+              ml.currentStartedAtSec ?? Math.max(0, endedAtSec - matchDurationSec);
+            const matchNo =
+              ml.currentMatchNo ??
+              (ml.records.length > 0
+                ? Math.max(...ml.records.map((rec) => rec.matchNo)) + 1
+                : 1);
+
+            // killer/player の自動取得: SetsLine の現在の SET から拾う
+            let autoKiller = "";
+            let autoPlayer = "";
+            const sl = r.settings.lines.find(isSetsLine);
+            if (sl) {
+              const idx = Math.min(
+                Math.max(0, sl.currentSetIndex ?? 0),
+                Math.max(0, sl.sets.length - 1),
+              );
+              const cur = sl.sets[idx];
+              if (cur) {
+                autoKiller = cur.killerName ?? "";
+                autoPlayer = cur.playerName ?? "";
+              }
+            }
+
+            // isWin の自動推定: 結果文字列が "4K" / "3K" / "✓" を含めば勝利寄り
+            const autoWin = /(^|\b)(3K|4K)\b/i.test(result) || /[✓✔]/.test(result);
+
+            const newRecord: MatchResult = {
+              matchNo,
+              startedAtSec,
+              endedAtSec,
+              killer: (killer ?? "").trim() || autoKiller,
+              player: (player ?? "").trim() || autoPlayer,
+              result: result.trim() || "?",
+              isWin: isWin ?? autoWin,
+            };
+
+            const nextRecords = [...ml.records, newRecord];
+            const nextMl = {
+              ...ml,
+              records: nextRecords,
+              currentMatchNo: null,
+              currentStartedAtSec: null,
+              enabled: true, // 記録した瞬間にウィジェットも自動表示
+            };
+            // matchTimer もリセット(次マッチ準備状態に)
+            const nextMt = resetSw({ ...mt, enabled: mt.enabled });
+
+            return {
+              ...r,
+              settings: { ...r.settings, matchLog: nextMl, matchTimer: nextMt },
+              updatedAt: Date.now(),
+            };
+          }),
+        });
+      },
+
+      clearMatchLog: () => {
+        const id = get().activeRoomId;
+        set({
+          rooms: get().rooms.map((r) => {
+            if (r.id !== id) return r;
+            const ml = normalizeMatchLog(r.settings.matchLog);
+            return {
+              ...r,
+              settings: {
+                ...r.settings,
+                matchLog: { ...ml, records: [], currentMatchNo: null, currentStartedAtSec: null },
+              },
+              updatedAt: Date.now(),
+            };
+          }),
+        });
       },
 
       cycleRoom: (dir) => {

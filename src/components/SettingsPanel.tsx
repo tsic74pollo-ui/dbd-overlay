@@ -2,6 +2,7 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
   normalizeBilingualStyle,
+  normalizeMatchLog,
   normalizeMatchTimer,
   normalizePerkCover,
   normalizeSessionTimer,
@@ -10,6 +11,7 @@ import type {
   Align,
   BilingualStyle,
   Line,
+  MatchLogWidget,
   MatchTimer,
   PerkCover,
   SessionTimer,
@@ -26,6 +28,7 @@ import { PerkCoverEditor } from "@/components/PerkCoverEditor";
 import { MatchTimerEditor } from "@/components/MatchTimerEditor";
 import { SessionTimerEditor } from "@/components/SessionTimerEditor";
 import { BilingualStyleEditor } from "@/components/BilingualStyleEditor";
+import { MatchLogEditor } from "@/components/MatchLogEditor";
 import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
@@ -63,6 +66,10 @@ export function SettingsPanel() {
     update((s) => ({ ...s, bilingualStyle: next }));
   };
 
+  const setMatchLog = (next: MatchLogWidget) => {
+    update((s) => ({ ...s, matchLog: next }));
+  };
+
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -91,6 +98,8 @@ export function SettingsPanel() {
       <MatchTimerEditor value={normalizeMatchTimer(settings.matchTimer)} onChange={setMatchTimer} />
 
       <SessionTimerEditor value={normalizeSessionTimer(settings.sessionTimer)} onChange={setSessionTimer} />
+
+      <MatchLogEditor value={normalizeMatchLog(settings.matchLog)} onChange={setMatchLog} />
 
       <BilingualStyleEditor value={normalizeBilingualStyle(settings.bilingualStyle)} onChange={setBilingualStyle} />
 

@@ -15,6 +15,7 @@ import { elapsedMs, fmtDown, fmtUp } from "@/lib/timer";
 import { cn } from "@/lib/cn";
 import { useDraggablePercent } from "@/lib/useDraggablePercent";
 import { useAudioReactive } from "@/lib/useAudioReactive";
+import { MatchLogView } from "@/components/MatchLogView";
 
 type Props = {
   settings: OverlaySettings;
@@ -624,6 +625,11 @@ export function OverlayView({
           editable={editable}
           onMove={onMoveSessionTimer}
         />
+      )}
+
+      {/* マッチログ(今日のスクリム結果) */}
+      {settings.matchLog?.enabled && (
+        <MatchLogView ml={settings.matchLog} editable={editable} />
       )}
     </div>
   );

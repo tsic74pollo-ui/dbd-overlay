@@ -1,5 +1,6 @@
 import type {
   BilingualStyle,
+  MatchLogWidget,
   MatchTimer,
   OverlaySettings,
   PerkCover,
@@ -9,10 +10,12 @@ import type {
 } from "./types";
 import {
   defaultBilingualStyle,
+  defaultMatchLog,
   defaultMatchTimer,
   defaultPerkCover,
   defaultSessionTimer,
   normalizeBilingualStyle,
+  normalizeMatchLog,
   normalizeMatchTimer,
   normalizePerkCover,
   normalizeSessionTimer,
@@ -106,6 +109,11 @@ export const compressSettings = (
     const c = stripObject(s.bilingualStyle, defaultBilingualStyle());
     if (Object.keys(c).length > 0) out.bilingualStyle = c as BilingualStyle;
   }
+  if (s.matchLog) {
+    // records 配列はそのまま、その他フィールドは default 比較で剥ぐ
+    const c = stripObject(s.matchLog, defaultMatchLog());
+    if (Object.keys(c).length > 0) out.matchLog = c as MatchLogWidget;
+  }
   return out;
 };
 
@@ -127,6 +135,9 @@ export const decompressSettings = (
       : undefined,
     bilingualStyle: s.bilingualStyle
       ? normalizeBilingualStyle(s.bilingualStyle as Partial<BilingualStyle>)
+      : undefined,
+    matchLog: s.matchLog
+      ? normalizeMatchLog(s.matchLog as Partial<MatchLogWidget>)
       : undefined,
   };
 };

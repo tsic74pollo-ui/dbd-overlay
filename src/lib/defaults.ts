@@ -1,6 +1,7 @@
 import type {
   BilingualStyle,
   Line,
+  MatchLogWidget,
   MatchTimer,
   ObsConfig,
   OverlaySettings,
@@ -253,6 +254,33 @@ export const normalizeBilingualStyle = (bs?: Partial<BilingualStyle>): Bilingual
   ...bs,
 });
 
+// マッチログウィジェット(今日のスクリム結果)既定値。既定位置は右側余白。
+export const defaultMatchLog = (): MatchLogWidget => ({
+  enabled: false,
+  x: 72,
+  y: 14,
+  width: 26,
+  fontScale: 0.78,
+  bgColor: "#0d0d0f",
+  bgOpacity: 0.55,
+  titleText: "TODAY'S SCRIM",
+  maxVisibleRows: 8,
+  showCurrentMatchHighlight: true,
+  records: [],
+  currentMatchNo: null,
+  currentStartedAtSec: null,
+});
+
+export const normalizeMatchLog = (m?: Partial<MatchLogWidget>): MatchLogWidget => {
+  const d = defaultMatchLog();
+  return {
+    ...d,
+    ...m,
+    // records は配列なので明示マージ
+    records: Array.isArray(m?.records) ? (m!.records as MatchLogWidget["records"]) : d.records,
+  };
+};
+
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [
   { key: "1080p-80", label: "1080p / HUD 80%", rect: { x: 88.5, y: 79, width: 10.5, height: 19 } },
@@ -266,6 +294,7 @@ export const defaultSettings = (): OverlaySettings => ({
   matchTimer: defaultMatchTimer(),
   sessionTimer: defaultSessionTimer(),
   bilingualStyle: defaultBilingualStyle(),
+  matchLog: defaultMatchLog(),
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({

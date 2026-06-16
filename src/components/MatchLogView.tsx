@@ -1,0 +1,159 @@
+import type { CSSProperties } from "react";
+import type { MatchLogWidget } from "@/lib/types";
+import { cn } from "@/lib/cn";
+
+type Props = {
+  ml: MatchLogWidget;
+  editable?: boolean;
+};
+
+const hexToRgba = (hex: string, opacity: number): string => {
+  if (!hex.startsWith("#") || hex.length < 7) return `rgba(13,13,15,${opacity})`;
+  const r = parseInt(hex.slice(1, 3), 16) || 0;
+  const g = parseInt(hex.slice(3, 5), 16) || 0;
+  const b = parseInt(hex.slice(5, 7), 16) || 0;
+  return `rgba(${r},${g},${b},${opacity})`;
+};
+
+/**
+ * オーバーレイ余白に「今日のスクリム結果」 を縦積み表示するウィジェット。
+ *   - 完了マッチが上から積まれる(records[0] が最古、最後尾が最新)
+ *   - maxVisibleRows を超える古いマッチは折りたたみ/フェード
+ *   - 進行中マッチ(currentMatchNo != null) が一番下にハイライト表示
+ */
+export function MatchLogView({ ml, editable }: Props) {
+  const bg = hexToRgba(ml.bgColor, ml.bgOpacity);
+
+  // 表示対象: 最新 N 件 + 進行中(あれば)
+  const recordsToShow = ml.records.slice(-ml.maxVisibleRows);
+  const olderCount = Math.max(0, ml.records.length - recordsToShow.length);
+
+  const containerStyle: CSSProperties = {
+    position: "absolute",
+    left: `${ml.x}%`,
+    top: `${ml.y}%`,
+    width: `${ml.width}%`,
+    fontSize: `${ml.fontScale}em`,
+    background: bg,
+    padding: "10px 12px",
+    borderRadius: 8,
+    color: "#fff",
+    textShadow: "1px 1px 2px rgba(0,0,0,0.85)",
+    fontVariantNumeric: "tabular-nums",
+    pointerEvents: editable ? "auto" : "none",
+  };
+
+  return (
+    <div className={cn("match-log-widget", editable && "edit-draggable")} style={containerStyle}>
+      {ml.titleText && (
+        <div
+          style={{
+            fontWeight: 900,
+            letterSpacing: "0.08em",
+            fontSize: "0.85em",
+            color: "#FFB347",
+            paddingBottom: 6,
+            marginBottom: 6,
+            borderBottom: "1px solid rgba(255,255,255,0.15)",
+          }}
+        >
+          {ml.titleText}
+        </div>
+      )}
+
+      {olderCount > 0 && (
+        <div style={{ fontSize: "0.65em", opacity: 0.55, marginBottom: 4 }}>
+          (… 古い {olderCount} 件は折りたたみ)
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {recordsToShow.map((rec) => (
+          <MatchLogRow key={rec.matchNo} record={rec} fontScale={ml.fontScale} />
+        ))}
+
+        {ml.currentMatchNo != null && ml.showCurrentMatchHighlight && (
+          <CurrentMatchRow matchNo={ml.currentMatchNo} fontScale={ml.fontScale} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MatchLogRow({
+  record,
+  fontScale: _fontScale,
+}: {
+  record: MatchLogWidget["records"][number];
+  fontScale: number;
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "auto 1fr auto auto",
+        alignItems: "baseline",
+        gap: 8,
+        fontSize: "0.95em",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span style={{ fontWeight: 700, color: "#FFB347", opacity: 0.85 }}>
+        M{record.matchNo}
+      </span>
+      <span
+        style={{
+          fontWeight: 700,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {record.killer}
+        {record.player && (
+          <span style={{ fontSize: "0.78em", opacity: 0.7, marginLeft: 6 }}>
+            {record.player}
+          </span>
+        )}
+      </span>
+      <span style={{ fontWeight: 900, color: record.isWin ? "#7CFC8C" : "#FFFFFF" }}>
+        {record.result}
+      </span>
+      <span style={{ width: "1em", textAlign: "center", color: "#7CFC8C", fontWeight: 900 }}>
+        {record.isWin ? "✓" : ""}
+      </span>
+    </div>
+  );
+}
+
+function CurrentMatchRow({ matchNo, fontScale: _fontScale }: { matchNo: number; fontScale: number }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "auto 1fr auto",
+        alignItems: "baseline",
+        gap: 8,
+        fontSize: "0.95em",
+        marginTop: 2,
+        padding: "3px 6px",
+        background: "rgba(255,179,71,0.15)",
+        border: "1px solid rgba(255,179,71,0.45)",
+        borderRadius: 4,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span style={{ fontWeight: 700, color: "#FFB347" }}>M{matchNo}</span>
+      <span style={{ opacity: 0.65, fontStyle: "italic" }}>…稼働中</span>
+      <span
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: "50%",
+          background: "#FF3B3B",
+          alignSelf: "center",
+          boxShadow: "0 0 6px rgba(255,59,59,0.85)",
+        }}
+      />
+    </div>
+  );
+}

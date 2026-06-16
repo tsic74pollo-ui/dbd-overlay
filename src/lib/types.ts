@@ -16,6 +16,50 @@ export type TextLine = LineBase & {
   secondaryText?: string;
 };
 
+/** 1 マッチ分の記録(マッチログウィジェット表示用)。 */
+export type MatchResult = {
+  /** 表示用の連番(M1, M2 ...) */
+  matchNo: number;
+  /** 通しタイマー REC の経過秒(マッチ開始時)。映像の頭出し用 */
+  startedAtSec: number;
+  /** REC 経過秒(マッチ終了/記録時) */
+  endedAtSec: number;
+  killer: string;
+  player: string;
+  /** "4K" / "3K+1E" / "DC" 等の自由テキスト */
+  result: string;
+  /** ✓ で勝利マークを行末に表示 */
+  isWin?: boolean;
+};
+
+/** 今日のスクリム結果ウィジェット。右側余白に縦積み表示。 */
+export type MatchLogWidget = {
+  enabled: boolean;
+  /** 配置 % */
+  x: number;
+  y: number;
+  /** 横幅 % */
+  width: number;
+  /** 文字サイズ倍率 */
+  fontScale: number;
+  /** 背景色(#hex) */
+  bgColor: string;
+  /** 背景不透明度 0..1 */
+  bgOpacity: number;
+  /** 見出しテキスト。空なら見出し非表示 */
+  titleText: string;
+  /** 最大表示行数(超えると古い順にフェード/折りたたみ) */
+  maxVisibleRows: number;
+  /** 進行中マッチをハイライト表示するか */
+  showCurrentMatchHighlight: boolean;
+  /** 蓄積された全マッチ結果(最後尾が最新) */
+  records: MatchResult[];
+  /** 現在進行中のマッチ番号(未開始時は null) */
+  currentMatchNo: number | null;
+  /** 現在マッチの開始 REC 経過秒(未開始 null) */
+  currentStartedAtSec: number | null;
+};
+
 /** バイリンガル(第二テキスト)表示のルーム共通スタイル。全 TextLine の secondaryText に適用される。 */
 export type BilingualStyle = {
   /** 第二テキストの色。既定は半透明の白寄り灰色 */
@@ -179,6 +223,8 @@ export type OverlaySettings = {
   sessionTimer?: SessionTimer;
   /** バイリンガル表示の共通スタイル(各 TextLine の secondaryText に適用) */
   bilingualStyle?: BilingualStyle;
+  /** 今日のスクリム結果ウィジェット */
+  matchLog?: MatchLogWidget;
 };
 
 export type Room = {
