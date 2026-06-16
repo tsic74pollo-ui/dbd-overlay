@@ -97,6 +97,22 @@ export function LineEditor({ label, line, onChange }: Props) {
                   placeholder="#FFFFFF"
                 />
               </div>
+
+              {/* バイリンガル: 第二テキスト(任意)。空欄なら従来通り単行表示。
+                  色とサイズはルーム共通の「バイリンガル表示」 セクションで設定 */}
+              <div className="space-y-1 pt-1 border-t border-gray-700">
+                <Label className="text-white text-xs text-gray-300">
+                  第二テキスト(任意・主の下に小さく表示)
+                </Label>
+                <Input
+                  value={t.secondaryText || ""}
+                  onChange={(e) =>
+                    onChange({ secondaryText: e.target.value } as Partial<TextLine>)
+                  }
+                  placeholder="例: 英訳 / 副題 / 翻訳..."
+                  className="bg-gray-700 border-gray-600 text-sm"
+                />
+              </div>
             </>
           )}
 

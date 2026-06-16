@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import type {
+  BilingualStyle,
   Line,
   MatchTimer,
   OverlaySettings,
@@ -9,6 +10,7 @@ import type {
   TextLine,
 } from "@/lib/types";
 import { isSetsLine } from "@/lib/types";
+import { defaultBilingualStyle } from "@/lib/defaults";
 import { elapsedMs, fmtDown, fmtUp } from "@/lib/timer";
 import { cn } from "@/lib/cn";
 import { useDraggablePercent } from "@/lib/useDraggablePercent";
@@ -59,8 +61,13 @@ const lineBgStyle = (l: Line): CSSProperties => {
   return {};
 };
 
-const RenderText = ({ line }: { line: Line }) => {
+const RenderText = ({ line, bilingual }: { line: Line; bilingual?: BilingualStyle }) => {
   const t = line as TextLine;
+  // 第二テキスト(secondaryText)があり、かつバイリンガルスタイルが取得できれば主+副の2段で描画。
+  // 複数色モード(segments)では従来通り単行(secondaryText は無視)。
+  const secondary = (!t.segments && (t.secondaryText ?? "").trim()) || null;
+  const bs = bilingual ?? defaultBilingualStyle();
+
   if (t.segments && t.segments.length > 0) {
     return (
       <>
@@ -74,7 +81,7 @@ const RenderText = ({ line }: { line: Line }) => {
   }
   const text = t.text || "";
   const lines = text.split("\n");
-  return (
+  const primary = (
     <>
       {lines.map((part, i) => (
         <span key={i}>
@@ -82,6 +89,30 @@ const RenderText = ({ line }: { line: Line }) => {
           {i < lines.length - 1 && <br />}
         </span>
       ))}
+    </>
+  );
+  if (!secondary) return primary;
+  // 主の直下に小さく薄く第二テキスト。背景は引き継がず、色とサイズは共通スタイル。
+  return (
+    <>
+      {primary}
+      <div
+        style={{
+          fontSize: `${bs.scale}em`,
+          color: bs.color,
+          marginTop: `${bs.gapEm}em`,
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          whiteSpace: secondary.includes("\n") ? "pre" : "nowrap",
+        }}
+      >
+        {secondary.split("\n").map((part, i, arr) => (
+          <span key={i}>
+            {part}
+            {i < arr.length - 1 && <br />}
+          </span>
+        ))}
+      </div>
     </>
   );
 };
@@ -472,7 +503,7 @@ export function OverlayView({
               }}
               className="text-base opacity-90 tracking-wide"
             >
-              <RenderText line={lines[0]} />
+              <RenderText line={lines[0]} bilingual={settings.bilingualStyle} />
             </div>
           </div>
         )}
@@ -497,7 +528,7 @@ export function OverlayView({
             }}
             className="text-4xl mb-2 tracking-tight leading-tight"
           >
-            <RenderText line={lines[1]} />
+            <RenderText line={lines[1]} bilingual={settings.bilingualStyle} />
           </div>
         )}
 
@@ -524,7 +555,7 @@ export function OverlayView({
                     paddingRight: 20,
                   }}
                 >
-                  <RenderText line={line} />
+                  <RenderText line={line} bilingual={settings.bilingualStyle} />
                 </div>
               ),
           )}

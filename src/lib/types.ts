@@ -11,6 +11,19 @@ export type TextLine = LineBase & {
   text?: string;
   color?: string;
   segments?: Segment[];
+  /** バイリンガル表示用の第二テキスト(EN 翻訳 or サブタイトル等)。空なら従来通り単行表示。
+   *  色とサイズ倍率はルーム共通の OverlaySettings.bilingualStyle を参照する。 */
+  secondaryText?: string;
+};
+
+/** バイリンガル(第二テキスト)表示のルーム共通スタイル。全 TextLine の secondaryText に適用される。 */
+export type BilingualStyle = {
+  /** 第二テキストの色。既定は半透明の白寄り灰色 */
+  color: string;
+  /** 主テキストに対するフォントサイズ倍率(0.3 〜 0.9 程度) */
+  scale: number;
+  /** 主テキストとの行間 em */
+  gapEm: number;
 };
 
 export type SetEntry = {
@@ -164,6 +177,8 @@ export type OverlaySettings = {
   perkCover?: PerkCover;
   matchTimer?: MatchTimer;
   sessionTimer?: SessionTimer;
+  /** バイリンガル表示の共通スタイル(各 TextLine の secondaryText に適用) */
+  bilingualStyle?: BilingualStyle;
 };
 
 export type Room = {

@@ -1,12 +1,14 @@
 import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
+  normalizeBilingualStyle,
   normalizeMatchTimer,
   normalizePerkCover,
   normalizeSessionTimer,
 } from "@/lib/defaults";
 import type {
   Align,
+  BilingualStyle,
   Line,
   MatchTimer,
   PerkCover,
@@ -23,6 +25,7 @@ import { MatchControls } from "@/components/MatchControls";
 import { PerkCoverEditor } from "@/components/PerkCoverEditor";
 import { MatchTimerEditor } from "@/components/MatchTimerEditor";
 import { SessionTimerEditor } from "@/components/SessionTimerEditor";
+import { BilingualStyleEditor } from "@/components/BilingualStyleEditor";
 import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
@@ -56,6 +59,10 @@ export function SettingsPanel() {
     update((s) => ({ ...s, sessionTimer: next }));
   };
 
+  const setBilingualStyle = (next: BilingualStyle) => {
+    update((s) => ({ ...s, bilingualStyle: next }));
+  };
+
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -84,6 +91,8 @@ export function SettingsPanel() {
       <MatchTimerEditor value={normalizeMatchTimer(settings.matchTimer)} onChange={setMatchTimer} />
 
       <SessionTimerEditor value={normalizeSessionTimer(settings.sessionTimer)} onChange={setSessionTimer} />
+
+      <BilingualStyleEditor value={normalizeBilingualStyle(settings.bilingualStyle)} onChange={setBilingualStyle} />
 
       <IconPicker iconImage={settings.iconImage} onChange={setIcon} />
 

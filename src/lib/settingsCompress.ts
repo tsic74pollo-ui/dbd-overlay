@@ -1,4 +1,5 @@
 import type {
+  BilingualStyle,
   MatchTimer,
   OverlaySettings,
   PerkCover,
@@ -7,9 +8,11 @@ import type {
   SessionTimer,
 } from "./types";
 import {
+  defaultBilingualStyle,
   defaultMatchTimer,
   defaultPerkCover,
   defaultSessionTimer,
+  normalizeBilingualStyle,
   normalizeMatchTimer,
   normalizePerkCover,
   normalizeSessionTimer,
@@ -99,6 +102,10 @@ export const compressSettings = (
     const c = compressSessionTimer(s.sessionTimer);
     if (Object.keys(c).length > 0) out.sessionTimer = c as SessionTimer;
   }
+  if (s.bilingualStyle) {
+    const c = stripObject(s.bilingualStyle, defaultBilingualStyle());
+    if (Object.keys(c).length > 0) out.bilingualStyle = c as BilingualStyle;
+  }
   return out;
 };
 
@@ -117,6 +124,9 @@ export const decompressSettings = (
       : undefined,
     sessionTimer: s.sessionTimer
       ? normalizeSessionTimer(s.sessionTimer as Partial<SessionTimer>)
+      : undefined,
+    bilingualStyle: s.bilingualStyle
+      ? normalizeBilingualStyle(s.bilingualStyle as Partial<BilingualStyle>)
       : undefined,
   };
 };

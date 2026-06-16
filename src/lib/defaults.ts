@@ -1,4 +1,5 @@
 import type {
+  BilingualStyle,
   Line,
   MatchTimer,
   ObsConfig,
@@ -240,6 +241,18 @@ export const normalizeSessionTimer = (st?: Partial<SessionTimer>): SessionTimer 
   ...st,
 });
 
+// バイリンガル表示の共通スタイル既定値。主テキストより小さく薄く控えめに。
+export const defaultBilingualStyle = (): BilingualStyle => ({
+  color: "rgba(255,255,255,0.62)",
+  scale: 0.55,
+  gapEm: 0.05,
+});
+
+export const normalizeBilingualStyle = (bs?: Partial<BilingualStyle>): BilingualStyle => ({
+  ...defaultBilingualStyle(),
+  ...bs,
+});
+
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [
   { key: "1080p-80", label: "1080p / HUD 80%", rect: { x: 88.5, y: 79, width: 10.5, height: 19 } },
@@ -252,6 +265,7 @@ export const defaultSettings = (): OverlaySettings => ({
   perkCover: defaultPerkCover(),
   matchTimer: defaultMatchTimer(),
   sessionTimer: defaultSessionTimer(),
+  bilingualStyle: defaultBilingualStyle(),
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({
