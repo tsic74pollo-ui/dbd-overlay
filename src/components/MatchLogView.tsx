@@ -99,23 +99,28 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
   const rightCol = record.isPowered ? "✓" : `${record.gensRemaining ?? "?"}G`;
   const rightColor = record.isPowered ? "#7CFC8C" : "#FF7A7A";
 
+  // note 空のときは killer 名のすぐ右に K/S を寄せる(余白を埋める仕様)。
+  // note ありのときは killer + note の幅ぶん自然に押し出される。
+  // どちらも max 2em までの "spacer" で余白が広がりすぎないように制限し、
+  // 行の右端に巨大な空白が生まれない統一感ある見た目にする。
   return (
     <div
       style={{
-        display: "grid",
-        gridTemplateColumns: "auto 1fr auto auto",
+        display: "flex",
         alignItems: "baseline",
         gap: 8,
         fontSize: "0.95em",
         whiteSpace: "nowrap",
       }}
     >
-      <span style={{ fontWeight: 700, color: "#FFB347", opacity: 0.85 }}>
+      <span style={{ fontWeight: 700, color: "#FFB347", opacity: 0.85, flex: "0 0 auto" }}>
         M{record.matchNo}
       </span>
       <span
         style={{
           fontWeight: 700,
+          flex: "0 1 auto",
+          minWidth: 0,
           overflow: "hidden",
           textOverflow: "ellipsis",
         }}
@@ -127,7 +132,9 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
           </span>
         )}
       </span>
-      <span style={{ fontWeight: 900, color: "#FFFFFF" }}>
+      {/* 余白を埋める spacer。最大 2em までしか広がらないので右端に巨大な空白ができない */}
+      <span style={{ flex: "1 1 0", maxWidth: "2em", minWidth: "0.5em" }} aria-hidden />
+      <span style={{ fontWeight: 900, color: "#FFFFFF", flex: "0 0 auto" }}>
         {record.kills}K/{record.stages}S
       </span>
       <span
@@ -136,6 +143,7 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
           textAlign: "right",
           color: rightColor,
           fontWeight: 900,
+          flex: "0 0 auto",
         }}
       >
         {rightCol}
