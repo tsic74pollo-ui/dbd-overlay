@@ -34,12 +34,18 @@ type AppActions = {
   setApiKey: (key: string | null) => void;
   /** OBS WebSocket 設定 */
   setObsConfig: (patch: Partial<ObsConfig>) => void;
-  /** マッチ結果を 1 件記録 + matchTimer リセット + 現マッチクリア */
+  /** マッチ結果を 1 件記録 + matchTimer リセット + 現マッチクリア
+   *
+   * isPowered=true: kills/stages を尊重(0-4 / 0-12)
+   * isPowered=false かつ gensRemaining 指定: 4K12S 確定 で kills/stages は強制 4/12
+   * killer 未指定なら現在 SET から自動取得、note は完全フリーワード */
   recordMatchResult: (input: {
-    result: string;
     killer?: string;
-    player?: string;
-    isWin?: boolean;
+    note?: string;
+    kills?: number;
+    stages?: number;
+    isPowered: boolean;
+    gensRemaining?: number;
   }) => void;
   /** 蓄積されたマッチ記録を全消去 */
   clearMatchLog: () => void;
@@ -326,7 +332,7 @@ export const useAppStore = create<AppStore>()(
         }, revealMs);
       },
 
-      recordMatchResult: ({ result, killer, player, isWin }) => {
+      recordMatchResult: ({ killer, note, kills, stages, isPowered, gensRemaining }) => {
         const id = get().activeRoomId;
         set({
           rooms: get().rooms.map((r) => {
@@ -345,9 +351,8 @@ export const useAppStore = create<AppStore>()(
                 ? Math.max(...ml.records.map((rec) => rec.matchNo)) + 1
                 : 1);
 
-            // killer/player の自動取得: SetsLine の現在の SET から拾う
+            // killer の自動取得: SetsLine の現在の SET から拾う(note は完全に手入力なので自動取得しない)
             let autoKiller = "";
-            let autoPlayer = "";
             const sl = r.settings.lines.find(isSetsLine);
             if (sl) {
               const idx = Math.min(
@@ -357,21 +362,28 @@ export const useAppStore = create<AppStore>()(
               const cur = sl.sets[idx];
               if (cur) {
                 autoKiller = cur.killerName ?? "";
-                autoPlayer = cur.playerName ?? "";
               }
             }
 
-            // isWin の自動推定: 結果文字列が "4K" / "3K" / "✓" を含めば勝利寄り
-            const autoWin = /(^|\b)(3K|4K)\b/i.test(result) || /[✓✔]/.test(result);
+            // !isPowered (全滅) かつ G 残数指定の場合は kills/stages を 4/12 強制
+            const lockedFull = !isPowered && typeof gensRemaining === "number";
+            const finalKills = lockedFull
+              ? 4
+              : Math.min(4, Math.max(0, Math.round(kills ?? 0)));
+            const finalStages = lockedFull
+              ? 12
+              : Math.min(12, Math.max(0, Math.round(stages ?? 0)));
 
             const newRecord: MatchResult = {
               matchNo,
               startedAtSec,
               endedAtSec,
               killer: (killer ?? "").trim() || autoKiller,
-              player: (player ?? "").trim() || autoPlayer,
-              result: result.trim() || "?",
-              isWin: isWin ?? autoWin,
+              note: (note ?? "").trim(),
+              kills: finalKills,
+              stages: finalStages,
+              isPowered,
+              gensRemaining: lockedFull ? gensRemaining : undefined,
             };
 
             const nextRecords = [...ml.records, newRecord];

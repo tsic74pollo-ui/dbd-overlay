@@ -8,7 +8,12 @@ import { ApiKeySetup } from "@/components/ApiKeySetup";
 import { useRoomsSync } from "@/lib/useRoomsSync";
 import { useAutoBackup } from "@/lib/useAutoBackup";
 import { Move } from "lucide-react";
-import { normalizePerkCover, normalizeMatchTimer, normalizeSessionTimer } from "@/lib/defaults";
+import {
+  normalizePerkCover,
+  normalizeMatchTimer,
+  normalizeSessionTimer,
+  normalizeMatchLog,
+} from "@/lib/defaults";
 import { useHotkeys } from "@/lib/useHotkeys";
 import { HotkeyToast } from "@/components/HotkeyToast";
 import { useRemoteCommandHost } from "@/lib/useRemoteCommandHost";
@@ -132,6 +137,12 @@ function EditorPageInner() {
                   updateSettings((s) => ({
                     ...s,
                     sessionTimer: { ...normalizeSessionTimer(s.sessionTimer), x, y },
+                  }))
+                }
+                onMoveMatchLog={(x, y) =>
+                  updateSettings((s) => ({
+                    ...s,
+                    matchLog: { ...normalizeMatchLog(s.matchLog), x, y },
                   }))
                 }
               />

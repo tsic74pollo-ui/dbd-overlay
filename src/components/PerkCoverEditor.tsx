@@ -51,6 +51,12 @@ const GLOW_STYLES: { value: PerkCoverGlowStyle; label: string; hint: string }[] 
   { value: "rainbow", label: "流れる虹色", hint: "7色 conic 回転" },
   { value: "flow", label: "流れる指定色", hint: "白ハイライトが指定色を流す" },
   { value: "audio", label: "オーディオ反応", hint: "声/BGMで脈動(マイク必要)" },
+  { value: "heartbeat", label: "心音(Terror Radius)", hint: "二拍子の鼓動。発見/接近の緊張感" },
+  { value: "crack", label: "亀裂", hint: "突発的に強く光る稲妻演出" },
+  { value: "hexFlame", label: "呪火", hint: "オレンジ/赤の揺らぎ。color 設定は無視" },
+  { value: "breathing", label: "呼吸", hint: "緩やかな明滅。BGM 替わりの背景演出" },
+  { value: "chase", label: "チェイス", hint: "速く強いパルス。盛り上げ時用" },
+  { value: "scratchmark", label: "スクラッチマーク", hint: "破線が回転する DBD っぽい質感" },
 ];
 
 const COUNTDOWN_POSITIONS: { value: CountdownPos; label: string }[] = [

@@ -20,11 +20,12 @@ import { LottiePlayer } from "@/components/LottiePlayer";
 
 type Props = {
   settings: OverlaySettings;
-  /** When true, PerkCover / MatchTimer / SessionTimer become draggable for in-place positioning. */
+  /** When true, PerkCover / MatchTimer / SessionTimer / MatchLog become draggable for in-place positioning. */
   editable?: boolean;
   onMovePerkCover?: (x: number, y: number) => void;
   onMoveMatchTimer?: (x: number, y: number) => void;
   onMoveSessionTimer?: (x: number, y: number) => void;
+  onMoveMatchLog?: (x: number, y: number) => void;
 };
 
 const STAGE_SELECTOR = ".overlay-stage";
@@ -175,12 +176,30 @@ function PerkCoverView({
   const isNeon = glowOn && style === "neon";
   const isSolid = glowOn && style === "solid";
   const isAudio = glowOn && style === "audio";
-  const spin = isRainbow || isFlow;
+  const isHeartbeat = glowOn && style === "heartbeat";
+  const isCrack = glowOn && style === "crack";
+  const isHexFlame = glowOn && style === "hexFlame";
+  const isBreathing = glowOn && style === "breathing";
+  const isChase = glowOn && style === "chase";
+  const isScratchmark = glowOn && style === "scratchmark";
+  const spin = isRainbow || isFlow || isScratchmark; // scratchmark も回転
 
   const glowColor = g.colorByTimer && pc.timer.enabled ? timerColor(ratio) : g.color;
   const coverBg = hexToRgba(pc.backgroundColor, pc.opacity);
 
-  const ringBackground = isRainbow ? RAINBOW : isFlow ? FLOW : glowOn ? "var(--glow)" : coverBg;
+  // ring 背景の決定:
+  // - rainbow / flow / scratchmark は専用 background(scratchmark は CSS 側で定義)
+  // - hexFlame は CSS 側で background 設定するため "transparent" を渡す(上書きされる)
+  // - その他のグローは color 指定
+  const ringBackground = isRainbow
+    ? RAINBOW
+    : isFlow
+      ? FLOW
+      : isScratchmark || isHexFlame
+        ? "transparent" // CSS class 側で background を設定する
+        : glowOn
+          ? "var(--glow)"
+          : coverBg;
 
   const shape = pc.shape ?? "diamond";
   const reveal = pc.reveal ?? "fade";
@@ -225,6 +244,12 @@ function PerkCoverView({
             spin && "spin",
             isSolid && "glow-static",
             isAudio && "audio",
+            isHeartbeat && "heartbeat",
+            isCrack && "crack",
+            isHexFlame && "hex-flame",
+            isBreathing && "breathing",
+            isChase && "chase",
+            isScratchmark && "scratchmark",
           )}
           style={{ background: ringBackground }}
         >
@@ -378,6 +403,7 @@ export function OverlayView({
   onMovePerkCover,
   onMoveMatchTimer,
   onMoveSessionTimer,
+  onMoveMatchLog,
 }: Props) {
   const { iconImage, lines, perkCover, matchTimer, sessionTimer } = settings;
   const lottie = settings.lottie;
@@ -662,7 +688,7 @@ export function OverlayView({
 
       {/* マッチログ(今日のスクリム結果) */}
       {settings.matchLog?.enabled && (
-        <MatchLogView ml={settings.matchLog} editable={editable} />
+        <MatchLogView ml={settings.matchLog} editable={editable} onMove={onMoveMatchLog} />
       )}
 
       {/* Lottie アニメーション(イベント発火再生) */}

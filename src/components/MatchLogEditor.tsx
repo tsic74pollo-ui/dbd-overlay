@@ -1,7 +1,8 @@
-import { useState } from "react";
-import { ListChecks, Trash2, Check } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ListChecks, Trash2, Check, Zap, Skull } from "lucide-react";
 import type { MatchLogWidget } from "@/lib/types";
-import { useAppStore } from "@/store/appStore";
+import { isSetsLine } from "@/lib/types";
+import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
@@ -13,45 +14,67 @@ type Props = {
   onChange: (next: MatchLogWidget) => void;
 };
 
-const QUICK_RESULTS = ["4K", "3K", "2K", "1K", "0K"];
-
 export function MatchLogEditor({ value, onChange }: Props) {
   const set = (p: Partial<MatchLogWidget>) => onChange({ ...value, ...p });
   const recordMatchResult = useAppStore((s) => s.recordMatchResult);
   const clearMatchLog = useAppStore((s) => s.clearMatchLog);
+  const room = useAppStore(selectActiveRoom);
 
-  // 結果入力フォームの状態
-  const [resultText, setResultText] = useState("");
+  // 現在の SET から killer を自動取得(表示プレビュー用。空欄なら手動入力)
+  const autoKiller = useMemo(() => {
+    if (!room) return "";
+    const sl = room.settings.lines.find(isSetsLine);
+    if (!sl) return "";
+    const idx = Math.min(
+      Math.max(0, sl.currentSetIndex ?? 0),
+      Math.max(0, sl.sets.length - 1),
+    );
+    return sl.sets[idx]?.killerName ?? "";
+  }, [room]);
+
+  // 入力ステート
   const [killerOverride, setKillerOverride] = useState("");
-  const [playerOverride, setPlayerOverride] = useState("");
-  const [isWin, setIsWin] = useState<boolean | null>(null);
+  const [note, setNote] = useState("");
+  const [kills, setKills] = useState(0);
+  const [stages, setStages] = useState(0);
+  const [isPowered, setIsPowered] = useState(true);
+  const [gensRemaining, setGensRemaining] = useState<number | null>(null);
 
-  const handleQuickResult = (r: string) => {
-    setResultText(r);
-    // 4K/3K は自動で勝利
-    if (r === "4K" || r === "3K") setIsWin(true);
-    else if (r === "0K") setIsWin(false);
-  };
+  // 通電 OFF + G 残数指定 = 4K12S 確定 → K/S 入力ロック
+  const lockedFull = !isPowered && gensRemaining !== null;
+
+  // 通電 ON に切替えたら G 残数はクリア
+  useEffect(() => {
+    if (isPowered) setGensRemaining(null);
+  }, [isPowered]);
 
   const handleRecord = () => {
-    if (!resultText.trim()) return;
     recordMatchResult({
-      result: resultText.trim(),
       killer: killerOverride.trim() || undefined,
-      player: playerOverride.trim() || undefined,
-      isWin: isWin ?? undefined,
+      note: note.trim() || undefined,
+      kills: lockedFull ? 4 : kills,
+      stages: lockedFull ? 12 : stages,
+      isPowered,
+      gensRemaining: gensRemaining ?? undefined,
     });
     // 入力をクリア
-    setResultText("");
     setKillerOverride("");
-    setPlayerOverride("");
-    setIsWin(null);
+    setNote("");
+    setKills(0);
+    setStages(0);
+    setIsPowered(true);
+    setGensRemaining(null);
   };
 
   const handleClearAll = () => {
     if (!confirm("今日のマッチ記録を全部消しますか?(この操作は取り消せません)")) return;
     clearMatchLog();
   };
+
+  // K/S 入力可能か(通電 ON のみ。通電 OFF + G 指定で 4/12 固定)
+  const ksEditable = !lockedFull;
+  const effectiveKills = lockedFull ? 4 : kills;
+  const effectiveStages = lockedFull ? 12 : stages;
 
   return (
     <div className="space-y-3 p-4 bg-gray-800 rounded">
@@ -68,7 +91,7 @@ export function MatchLogEditor({ value, onChange }: Props) {
 
       {value.enabled && (
         <>
-          {/* 結果記録フォーム(最頻使用ブロック) */}
+          {/* 結果記録フォーム */}
           <div className="space-y-2 p-3 bg-gray-750 rounded border border-amber-700/40">
             <Label className="text-white text-sm font-semibold">
               現在マッチの結果を記録
@@ -77,69 +100,137 @@ export function MatchLogEditor({ value, onChange }: Props) {
               )}
             </Label>
 
-            <div className="flex flex-wrap gap-1.5">
-              {QUICK_RESULTS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => handleQuickResult(r)}
-                  className={
-                    "px-3 py-1.5 rounded text-xs font-bold border transition " +
-                    (resultText === r
-                      ? "bg-amber-500 border-amber-400 text-white"
-                      : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
-                  }
-                >
-                  {r}
-                </button>
-              ))}
+            {/* Killer (自動 / オーバーライド) */}
+            <div className="space-y-1">
+              <Label className="text-white text-xs">
+                Killer
+                <span className="text-gray-400 ml-1">
+                  (現SET: <span className="text-amber-300 font-mono">{autoKiller || "(未設定)"}</span>)
+                </span>
+              </Label>
+              <Input
+                value={killerOverride}
+                onChange={(e) => setKillerOverride(e.target.value)}
+                placeholder={`空欄で SET から自動取得 (${autoKiller || "?"})`}
+                className="text-sm"
+              />
             </div>
 
-            <Input
-              value={resultText}
-              onChange={(e) => setResultText(e.target.value)}
-              placeholder="または自由入力(例: 3K+1E, DC, Cancel)"
-              className="text-sm"
-            />
-
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-1.5 text-xs text-gray-200 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={isWin === true}
-                  onChange={(e) => setIsWin(e.target.checked ? true : null)}
-                  className="accent-emerald-500"
-                />
-                ✓ 勝利マーク
-              </label>
+            {/* Note (フリーワード) */}
+            <div className="space-y-1">
+              <Label className="text-white text-xs">メモ / マップ名 / 自由記述</Label>
+              <Input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="例: Dead Dawg Saloon Killer Pick"
+                className="text-sm"
+              />
             </div>
 
-            {/* オーバーライド(任意。空なら現在の SET から自動取得) */}
-            <details className="text-xs">
-              <summary className="text-gray-400 cursor-pointer hover:text-white">
-                Killer / Player を手動で上書き(任意)
-              </summary>
-              <div className="mt-2 space-y-1.5">
-                <Input
-                  value={killerOverride}
-                  onChange={(e) => setKillerOverride(e.target.value)}
-                  placeholder="Killer (空欄で現SET から自動)"
-                  className="text-sm"
-                />
-                <Input
-                  value={playerOverride}
-                  onChange={(e) => setPlayerOverride(e.target.value)}
-                  placeholder="Player (空欄で現SET から自動)"
-                  className="text-sm"
-                />
+            {/* 通電 (勝利マーク代わり) */}
+            <div className="flex items-center justify-between p-2 bg-gray-700 rounded">
+              <Label className="text-white text-sm flex items-center gap-2">
+                <Zap className="w-4 h-4 text-yellow-300" />
+                通電(発電機完了) — ✓ マーク
+              </Label>
+              <Switch checked={isPowered} onCheckedChange={setIsPowered} />
+            </div>
+
+            {/* K / S 入力 */}
+            <div className="space-y-1">
+              <Label className="text-white text-xs flex items-center justify-between">
+                <span>キル数 K (0-4)</span>
+                {lockedFull && (
+                  <span className="text-xs text-red-300">↓ 4K12S で固定中</span>
+                )}
+              </Label>
+              <div className="flex gap-1.5">
+                {[0, 1, 2, 3, 4].map((k) => {
+                  const active = effectiveKills === k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      disabled={!ksEditable}
+                      onClick={() => setKills(k)}
+                      className={
+                        "flex-1 py-1.5 rounded text-xs font-bold border transition " +
+                        (!ksEditable
+                          ? "bg-gray-700 border-gray-700 text-gray-500 cursor-not-allowed"
+                          : active
+                            ? "bg-amber-500 border-amber-400 text-white"
+                            : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
+                      }
+                    >
+                      {k}K
+                    </button>
+                  );
+                })}
               </div>
-            </details>
+            </div>
+
+            <div className="space-y-1">
+              <Label className="text-white text-xs">ステージ数 S (0-12)</Label>
+              <input
+                type="range"
+                min={0}
+                max={12}
+                step={1}
+                value={effectiveStages}
+                disabled={!ksEditable}
+                onChange={(e) => setStages(parseInt(e.target.value, 10))}
+                className="w-full disabled:opacity-40"
+              />
+              <div className="text-xs text-gray-300 text-center font-mono">
+                {effectiveStages}S
+              </div>
+            </div>
+
+            {/* 通電 OFF 時のみ G 残数入力 */}
+            {!isPowered && (
+              <div className="space-y-1 p-2 bg-red-950/30 border border-red-800/40 rounded">
+                <Label className="text-white text-xs flex items-center gap-1">
+                  <Skull className="w-3.5 h-3.5 text-red-300" />
+                  発電機残数 G (1-5) ※ 全滅(4K12S)時の残ジェネ
+                </Label>
+                <div className="flex gap-1.5">
+                  {[5, 4, 3, 2, 1].map((g) => {
+                    const active = gensRemaining === g;
+                    return (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setGensRemaining(g)}
+                        className={
+                          "flex-1 py-1.5 rounded text-xs font-bold border transition " +
+                          (active
+                            ? "bg-red-500 border-red-400 text-white"
+                            : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
+                        }
+                      >
+                        {g}G
+                      </button>
+                    );
+                  })}
+                </div>
+                {gensRemaining !== null && (
+                  <p className="text-xs text-red-300 leading-snug pt-1">
+                    入力済み: 4K12S 確定 → K/S 入力はロック
+                  </p>
+                )}
+              </div>
+            )}
 
             <Button
               size="sm"
               className="w-full"
               onClick={handleRecord}
-              disabled={!resultText.trim()}
+              disabled={!isPowered && gensRemaining === null}
+              title={
+                !isPowered && gensRemaining === null
+                  ? "通電 OFF の場合は G 残数を選択してください"
+                  : "結果を記録"
+              }
             >
               <Check className="w-3.5 h-3.5" />
               結果を記録 + マッチタイマーリセット
@@ -162,21 +253,34 @@ export function MatchLogEditor({ value, onChange }: Props) {
               <p className="text-xs text-gray-500 italic py-2">まだ記録なし</p>
             ) : (
               <div className="space-y-0.5 max-h-40 overflow-y-auto">
-                {value.records.map((r) => (
-                  <div
-                    key={r.matchNo}
-                    className="flex items-center gap-2 text-xs py-0.5 font-mono text-gray-200"
-                  >
-                    <span className="text-amber-300 w-6">M{r.matchNo}</span>
-                    <span className="flex-1 truncate">
-                      {r.killer} / {r.player}
-                    </span>
-                    <span className={r.isWin ? "text-emerald-300 font-bold" : "text-white"}>
-                      {r.result}
-                    </span>
-                    <span className="w-3 text-emerald-300">{r.isWin ? "✓" : ""}</span>
-                  </div>
-                ))}
+                {value.records.map((r) => {
+                  const rightCol = r.isPowered ? "✓" : `${r.gensRemaining ?? "?"}G`;
+                  return (
+                    <div
+                      key={r.matchNo}
+                      className="flex items-center gap-2 text-xs py-0.5 font-mono text-gray-200"
+                    >
+                      <span className="text-amber-300 w-6">M{r.matchNo}</span>
+                      <span className="flex-1 truncate">
+                        {r.killer}
+                        {r.note && (
+                          <span className="opacity-60 ml-1">{r.note}</span>
+                        )}
+                      </span>
+                      <span className="text-white">
+                        {r.kills}K/{r.stages}S
+                      </span>
+                      <span
+                        className={
+                          "w-8 text-right " +
+                          (r.isPowered ? "text-emerald-300 font-bold" : "text-red-300 font-bold")
+                        }
+                      >
+                        {rightCol}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -187,6 +291,9 @@ export function MatchLogEditor({ value, onChange }: Props) {
               ウィジェットの位置/サイズ/見た目
             </summary>
             <div className="space-y-2 pt-2">
+              <p className="text-xs text-gray-400 italic">
+                💡 プレビュー上で直接ドラッグして配置調整も可能です
+              </p>
               <Input
                 value={value.titleText}
                 onChange={(e) => set({ titleText: e.target.value })}

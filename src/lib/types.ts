@@ -16,7 +16,16 @@ export type TextLine = LineBase & {
   secondaryText?: string;
 };
 
-/** 1 マッチ分の記録(マッチログウィジェット表示用)。 */
+/** 1 マッチ分の記録(マッチログウィジェット表示用)。
+ *
+ * 表示構造: M{No} {killer} {note}  {K/S}  {✓ or G残}
+ *
+ * 入力ルール:
+ *   - killer: 現在の SET から自動取得(編集時オーバーライド可)
+ *   - note: 完全フリーワード(マップ名/プレイ評価/メモ等、入力例 "Dead Dawg Saloon Killer Pick")
+ *   - 通電 (isPowered) = true: K/S 入力有効、G 非表示、行末 ✓
+ *   - 通電 = false かつ gensRemaining が入力されたら全滅(4K12S)が確定するため K/S 入力は無効化、G 残数(1-5) を行末に表示
+ */
 export type MatchResult = {
   /** 表示用の連番(M1, M2 ...) */
   matchNo: number;
@@ -24,12 +33,18 @@ export type MatchResult = {
   startedAtSec: number;
   /** REC 経過秒(マッチ終了/記録時) */
   endedAtSec: number;
+  /** Killer 名(現在の SET から自動入力。手動オーバーライド可) */
   killer: string;
-  player: string;
-  /** "4K" / "3K+1E" / "DC" 等の自由テキスト */
-  result: string;
-  /** ✓ で勝利マークを行末に表示 */
-  isWin?: boolean;
+  /** フリーワード欄(マップ名/メモ/プレイ評価など)。手動入力のみ */
+  note: string;
+  /** キル数 0-4 (通電時のみ意味あり。全滅時は表示上 4 固定) */
+  kills: number;
+  /** ステージ数 0-12 (通電時のみ意味あり。全滅時は表示上 12 固定) */
+  stages: number;
+  /** 通電(発電機全完了)。true: ✓ マーク + K/S 表示、false: 4K12S 固定 + G 残表示 */
+  isPowered: boolean;
+  /** 全滅時の発電機残数 1-5。isPowered=false かつ入力された場合のみ意味あり */
+  gensRemaining?: number;
 };
 
 /** 今日のスクリム結果ウィジェット。右側余白に縦積み表示。 */
@@ -151,7 +166,13 @@ export type PerkCoverGlowStyle =
   | "neon" // 1色のネオン明滅。旧 neonPulse
   | "rainbow" // 虹色 conic 回転
   | "flow" // 単色 + 白ハイライト回転
-  | "audio"; // 音量に反応して脈動
+  | "audio" // 音量に反応して脈動
+  | "heartbeat" // 心音 / Terror Radius 風の二拍子鼓動
+  | "crack" // 亀裂走る(ガラスにヒビ風の点滅)
+  | "hexFlame" // 呪火(オレンジ/赤のチラチラ揺らぎ。color 無視)
+  | "breathing" // 緩やかな呼吸(明滅ゆっくり)
+  | "chase" // チェイス(速く強いパルス)
+  | "scratchmark"; // スクラッチマーク風 (破線が回転)
 
 /** "audio" スタイル時の入力・反応設定 */
 export type AudioReactiveConfig = {

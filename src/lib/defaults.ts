@@ -272,13 +272,47 @@ export const defaultMatchLog = (): MatchLogWidget => ({
   currentStartedAtSec: null,
 });
 
+/** 旧スキーマ(player/result/isWin) の記録を新スキーマ(note/kills/stages/isPowered) に変換する。
+ *  既に新スキーマなら何もしない。 */
+const migrateMatchRecord = (
+  rec: Partial<MatchLogWidget["records"][number]> & {
+    player?: string;
+    result?: string;
+    isWin?: boolean;
+  },
+): MatchLogWidget["records"][number] => {
+  // 既に新スキーマかチェック
+  if (typeof rec.kills === "number" && typeof rec.isPowered === "boolean") {
+    return rec as MatchLogWidget["records"][number];
+  }
+  // 旧 → 新マイグレーション
+  const oldResult = (rec.result ?? "").toString();
+  // "4K" "3K" 等から数字を拾う
+  const km = oldResult.match(/(\d)\s*K/i);
+  const kills = km ? Math.min(4, Math.max(0, parseInt(km[1], 10))) : 0;
+  const isWin = rec.isWin === true;
+  return {
+    matchNo: rec.matchNo ?? 0,
+    startedAtSec: rec.startedAtSec ?? 0,
+    endedAtSec: rec.endedAtSec ?? 0,
+    killer: rec.killer ?? "",
+    note: rec.note ?? rec.player ?? "",
+    kills,
+    stages: 0,
+    isPowered: isWin,
+    gensRemaining: undefined,
+  };
+};
+
 export const normalizeMatchLog = (m?: Partial<MatchLogWidget>): MatchLogWidget => {
   const d = defaultMatchLog();
   return {
     ...d,
     ...m,
-    // records は配列なので明示マージ
-    records: Array.isArray(m?.records) ? (m!.records as MatchLogWidget["records"]) : d.records,
+    // records は配列。旧スキーマ(player/result/isWin) があればその場でマイグレーション
+    records: Array.isArray(m?.records)
+      ? (m!.records as Array<Partial<MatchLogWidget["records"][number]>>).map(migrateMatchRecord)
+      : d.records,
   };
 };
 

@@ -1,11 +1,15 @@
 import type { CSSProperties } from "react";
 import type { MatchLogWidget } from "@/lib/types";
 import { cn } from "@/lib/cn";
+import { useDraggablePercent } from "@/lib/useDraggablePercent";
 
 type Props = {
   ml: MatchLogWidget;
   editable?: boolean;
+  onMove?: (x: number, y: number) => void;
 };
+
+const STAGE_SELECTOR = ".overlay-stage";
 
 const hexToRgba = (hex: string, opacity: number): string => {
   if (!hex.startsWith("#") || hex.length < 7) return `rgba(13,13,15,${opacity})`;
@@ -20,9 +24,16 @@ const hexToRgba = (hex: string, opacity: number): string => {
  *   - 完了マッチが上から積まれる(records[0] が最古、最後尾が最新)
  *   - maxVisibleRows を超える古いマッチは折りたたみ/フェード
  *   - 進行中マッチ(currentMatchNo != null) が一番下にハイライト表示
+ *   - editable + onMove でプレビュー上ドラッグ可能(他オーバーレイ要素と同じパターン)
  */
-export function MatchLogView({ ml, editable }: Props) {
+export function MatchLogView({ ml, editable, onMove }: Props) {
   const bg = hexToRgba(ml.bgColor, ml.bgOpacity);
+
+  const dragProps = useDraggablePercent({
+    current: { x: ml.x, y: ml.y },
+    stageSelector: STAGE_SELECTOR,
+    onDrag: ({ x, y }) => onMove?.(x, y),
+  });
 
   // 表示対象: 最新 N 件 + 進行中(あれば)
   const recordsToShow = ml.records.slice(-ml.maxVisibleRows);
@@ -40,11 +51,14 @@ export function MatchLogView({ ml, editable }: Props) {
     color: "#fff",
     textShadow: "1px 1px 2px rgba(0,0,0,0.85)",
     fontVariantNumeric: "tabular-nums",
-    pointerEvents: editable ? "auto" : "none",
   };
 
   return (
-    <div className={cn("match-log-widget", editable && "edit-draggable")} style={containerStyle}>
+    <div
+      className={cn("match-log-widget", editable && onMove && "edit-draggable")}
+      style={containerStyle}
+      {...(editable && onMove ? dragProps : {})}
+    >
       {ml.titleText && (
         <div
           style={{
@@ -69,24 +83,22 @@ export function MatchLogView({ ml, editable }: Props) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {recordsToShow.map((rec) => (
-          <MatchLogRow key={rec.matchNo} record={rec} fontScale={ml.fontScale} />
+          <MatchLogRow key={rec.matchNo} record={rec} />
         ))}
 
         {ml.currentMatchNo != null && ml.showCurrentMatchHighlight && (
-          <CurrentMatchRow matchNo={ml.currentMatchNo} fontScale={ml.fontScale} />
+          <CurrentMatchRow matchNo={ml.currentMatchNo} />
         )}
       </div>
     </div>
   );
 }
 
-function MatchLogRow({
-  record,
-  fontScale: _fontScale,
-}: {
-  record: MatchLogWidget["records"][number];
-  fontScale: number;
-}) {
+function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) {
+  // 右端: 通電なら ✓、そうでなければ G 残数(未指定なら "?")
+  const rightCol = record.isPowered ? "✓" : `${record.gensRemaining ?? "?"}G`;
+  const rightColor = record.isPowered ? "#7CFC8C" : "#FF7A7A";
+
   return (
     <div
       style={{
@@ -109,23 +121,30 @@ function MatchLogRow({
         }}
       >
         {record.killer}
-        {record.player && (
+        {record.note && (
           <span style={{ fontSize: "0.78em", opacity: 0.7, marginLeft: 6 }}>
-            {record.player}
+            {record.note}
           </span>
         )}
       </span>
-      <span style={{ fontWeight: 900, color: record.isWin ? "#7CFC8C" : "#FFFFFF" }}>
-        {record.result}
+      <span style={{ fontWeight: 900, color: "#FFFFFF" }}>
+        {record.kills}K/{record.stages}S
       </span>
-      <span style={{ width: "1em", textAlign: "center", color: "#7CFC8C", fontWeight: 900 }}>
-        {record.isWin ? "✓" : ""}
+      <span
+        style={{
+          minWidth: "2.2em",
+          textAlign: "right",
+          color: rightColor,
+          fontWeight: 900,
+        }}
+      >
+        {rightCol}
       </span>
     </div>
   );
 }
 
-function CurrentMatchRow({ matchNo, fontScale: _fontScale }: { matchNo: number; fontScale: number }) {
+function CurrentMatchRow({ matchNo }: { matchNo: number }) {
   return (
     <div
       style={{
