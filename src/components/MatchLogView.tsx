@@ -99,16 +99,19 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
   const rightCol = record.isPowered ? "✓" : `${record.gensRemaining ?? "?"}G`;
   const rightColor = record.isPowered ? "#7CFC8C" : "#FF7A7A";
 
-  // note 空のときは killer 名のすぐ右に K/S を寄せる(余白を埋める仕様)。
-  // note ありのときは killer + note の幅ぶん自然に押し出される。
-  // どちらも max 2em までの "spacer" で余白が広がりすぎないように制限し、
-  // 行の右端に巨大な空白が生まれない統一感ある見た目にする。
+  // 余白を最小化する戦略:
+  //   justify-content: space-between で M1 / killer-note / K/S / 右端 を均等分散。
+  //   - 行右端まで右端コラムが届く(右端余白が消える)
+  //   - killer-note が短いと自然に gap が広がるが、右端の巨大空白問題は解消
+  //   - killer-note が長いと ellipsis でクリップして他要素に被らない
+  //   gap: 12px は最小間隔として担保(密着防止)。
   return (
     <div
       style={{
         display: "flex",
         alignItems: "baseline",
-        gap: 8,
+        justifyContent: "space-between",
+        gap: 12,
         fontSize: "0.95em",
         whiteSpace: "nowrap",
       }}
@@ -119,6 +122,9 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
       <span
         style={{
           fontWeight: 700,
+          // 0 1 auto = 自然な幅。縮むことはあっても伸びない。
+          // これにより flex container の残余白は justify-content: space-between が
+          // 3つの隙間に均等分配する(片側に巨大な余白が偏らない)。
           flex: "0 1 auto",
           minWidth: 0,
           overflow: "hidden",
@@ -132,14 +138,12 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
           </span>
         )}
       </span>
-      {/* 余白を埋める spacer。最大 2em までしか広がらないので右端に巨大な空白ができない */}
-      <span style={{ flex: "1 1 0", maxWidth: "2em", minWidth: "0.5em" }} aria-hidden />
       <span style={{ fontWeight: 900, color: "#FFFFFF", flex: "0 0 auto" }}>
         {record.kills}K/{record.stages}S
       </span>
       <span
         style={{
-          minWidth: "2.2em",
+          minWidth: "1.6em",
           textAlign: "right",
           color: rightColor,
           fontWeight: 900,
