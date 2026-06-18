@@ -99,19 +99,18 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
   const rightCol = record.isPowered ? "✓" : `${record.gensRemaining ?? "?"}G`;
   const rightColor = record.isPowered ? "#7CFC8C" : "#FF7A7A";
 
-  // 余白を最小化する戦略:
-  //   justify-content: space-between で M1 / killer-note / K/S / 右端 を均等分散。
-  //   - 行右端まで右端コラムが届く(右端余白が消える)
-  //   - killer-note が短いと自然に gap が広がるが、右端の巨大空白問題は解消
-  //   - killer-note が長いと ellipsis でクリップして他要素に被らない
-  //   gap: 12px は最小間隔として担保(密着防止)。
+  // レイアウト方針:
+  //   [M1] ⇔詰⇔ [killer-note] ⇔余白集中⇔ [K/S] ⇔詰⇔ [right-col][右端密着]
+  //   - M1 と killer は密接(gap 6px)
+  //   - K/S と right-col も密接(gap 6px)
+  //   - 余白は flex-grow spacer 1 つに全部集中(killer-note と K/S の間)
+  //   - right-col には marginRight も追加余白も無いので、コンテナ右端(内padding)に張付く
   return (
     <div
       style={{
         display: "flex",
         alignItems: "baseline",
-        justifyContent: "space-between",
-        gap: 12,
+        gap: 6,
         fontSize: "0.95em",
         whiteSpace: "nowrap",
       }}
@@ -122,9 +121,6 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
       <span
         style={{
           fontWeight: 700,
-          // 0 1 auto = 自然な幅。縮むことはあっても伸びない。
-          // これにより flex container の残余白は justify-content: space-between が
-          // 3つの隙間に均等分配する(片側に巨大な余白が偏らない)。
           flex: "0 1 auto",
           minWidth: 0,
           overflow: "hidden",
@@ -138,6 +134,8 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
           </span>
         )}
       </span>
+      {/* 余白吸収 spacer: 行内のフレックス残余白を全部ここで吸う */}
+      <span style={{ flex: "1 1 auto", minWidth: 8 }} aria-hidden />
       <span style={{ fontWeight: 900, color: "#FFFFFF", flex: "0 0 auto" }}>
         {record.kills}K/{record.stages}S
       </span>
