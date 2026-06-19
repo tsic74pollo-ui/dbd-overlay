@@ -43,7 +43,10 @@ export function MatchLogView({ ml, editable, onMove }: Props) {
     position: "absolute",
     left: `${ml.x}%`,
     top: `${ml.y}%`,
-    width: `${ml.width}%`,
+    // 子要素(各行)の自然幅に合わせて自動収縮しつつ、
+    // ユーザー指定の % を上限に。これで余白吸収を最小化。
+    width: "max-content",
+    maxWidth: `${ml.width}%`,
     fontSize: `${ml.fontScale}em`,
     background: bg,
     padding: "10px 12px",
@@ -134,8 +137,9 @@ function MatchLogRow({ record }: { record: MatchLogWidget["records"][number] }) 
           </span>
         )}
       </span>
-      {/* 余白吸収 spacer: 行内のフレックス残余白を全部ここで吸う */}
-      <span style={{ flex: "1 1 auto", minWidth: 8 }} aria-hidden />
+      {/* 余白吸収 spacer: コンテナが maxWidth 上限に達してる時のみ余白を吸う。
+          通常時(コンテナ shrink-to-fit)は ~1.4em 程度の控えめな間隔で K/S が見えるようにする */}
+      <span style={{ flex: "1 1 auto", minWidth: "1.4em" }} aria-hidden />
       <span style={{ fontWeight: 900, color: "#FFFFFF", flex: "0 0 auto" }}>
         {record.kills}K/{record.stages}S
       </span>
