@@ -7,6 +7,13 @@ type ObsContextValue = {
   scenes: string[];
   currentScene: string | null;
   setScene: (name: string) => Promise<unknown>;
+  /** ソースの現在フレームを base64 PNG dataURL で取得(チェイス検知の診断ツール等で使用)。
+   *  失敗時(未接続/ソース無し等)は null を返す。 */
+  getSourceScreenshot: (
+    sourceName: string,
+    imageWidth?: number,
+    imageHeight?: number,
+  ) => Promise<string | null>;
 };
 
 const ObsContext = createContext<ObsContextValue | null>(null);
@@ -28,6 +35,7 @@ export function useObsConnectionContext(): ObsContextValue {
       scenes: [],
       currentScene: null,
       setScene: async () => undefined,
+      getSourceScreenshot: async () => null,
     };
   }
   return v;

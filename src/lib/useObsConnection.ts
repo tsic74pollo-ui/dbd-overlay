@@ -157,5 +157,29 @@ export function useObsConnection() {
     return obs.call("SetCurrentProgramScene", { sceneName: name });
   };
 
-  return { status, error, scenes, currentScene, setScene };
+  /** OBS ソースの現在フレームを base64 PNG dataURL で取得する。
+   *  チェイス検知の診断ツール等で、ゲーム画面の一部領域を解析するために使う。
+   *  obs-websocket v5 の GetSourceScreenshot を呼び出す。
+   *  失敗時は null を返す(エラー伝播せずポーリングループを止めない)。 */
+  const getSourceScreenshot = async (
+    sourceName: string,
+    imageWidth?: number,
+    imageHeight?: number,
+  ): Promise<string | null> => {
+    const obs = obsRef.current;
+    if (!obs || statusRef.current !== "live") return null;
+    try {
+      const res = await obs.call("GetSourceScreenshot", {
+        sourceName,
+        imageFormat: "png",
+        ...(imageWidth ? { imageWidth } : {}),
+        ...(imageHeight ? { imageHeight } : {}),
+      });
+      return res.imageData;
+    } catch {
+      return null;
+    }
+  };
+
+  return { status, error, scenes, currentScene, setScene, getSourceScreenshot };
 }

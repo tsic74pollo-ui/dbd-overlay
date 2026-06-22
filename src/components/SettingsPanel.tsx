@@ -2,6 +2,7 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
   normalizeBilingualStyle,
+  normalizeChaseDiagnostic,
   normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
@@ -11,6 +12,7 @@ import {
 import type {
   Align,
   BilingualStyle,
+  ChaseDiagnosticConfig,
   Line,
   LottieAnimation,
   MatchLogWidget,
@@ -32,6 +34,7 @@ import { SessionTimerEditor } from "@/components/SessionTimerEditor";
 import { BilingualStyleEditor } from "@/components/BilingualStyleEditor";
 import { MatchLogEditor } from "@/components/MatchLogEditor";
 import { LottieEditor } from "@/components/LottieEditor";
+import { ChaseDiagnosticPanel } from "@/components/ChaseDiagnosticPanel";
 import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
@@ -77,6 +80,10 @@ export function SettingsPanel() {
     update((s) => ({ ...s, lottie: next }));
   };
 
+  const setChaseDiagnostic = (next: ChaseDiagnosticConfig) => {
+    update((s) => ({ ...s, chaseDiagnostic: next }));
+  };
+
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -111,6 +118,11 @@ export function SettingsPanel() {
       <BilingualStyleEditor value={normalizeBilingualStyle(settings.bilingualStyle)} onChange={setBilingualStyle} />
 
       <LottieEditor value={normalizeLottie(settings.lottie)} onChange={setLottie} />
+
+      <ChaseDiagnosticPanel
+        value={normalizeChaseDiagnostic(settings.chaseDiagnostic)}
+        onChange={setChaseDiagnostic}
+      />
 
       <IconPicker iconImage={settings.iconImage} onChange={setIcon} />
 

@@ -1,5 +1,6 @@
 import type {
   BilingualStyle,
+  ChaseDiagnosticConfig,
   LottieAnimation,
   MatchLogWidget,
   MatchTimer,
@@ -11,12 +12,14 @@ import type {
 } from "./types";
 import {
   defaultBilingualStyle,
+  defaultChaseDiagnostic,
   defaultLottie,
   defaultMatchLog,
   defaultMatchTimer,
   defaultPerkCover,
   defaultSessionTimer,
   normalizeBilingualStyle,
+  normalizeChaseDiagnostic,
   normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
@@ -122,6 +125,11 @@ export const compressSettings = (
     const c = stripObject(s.lottie, defaultLottie());
     if (Object.keys(c).length > 0) out.lottie = c as LottieAnimation;
   }
+  if (s.chaseDiagnostic) {
+    // rois / survivorNames は固定 4 要素配列 → そのまま透過
+    const c = stripObject(s.chaseDiagnostic, defaultChaseDiagnostic());
+    if (Object.keys(c).length > 0) out.chaseDiagnostic = c as ChaseDiagnosticConfig;
+  }
   return out;
 };
 
@@ -149,6 +157,9 @@ export const decompressSettings = (
       : undefined,
     lottie: s.lottie
       ? normalizeLottie(s.lottie as Partial<LottieAnimation>)
+      : undefined,
+    chaseDiagnostic: s.chaseDiagnostic
+      ? normalizeChaseDiagnostic(s.chaseDiagnostic as Partial<ChaseDiagnosticConfig>)
       : undefined,
   };
 };
