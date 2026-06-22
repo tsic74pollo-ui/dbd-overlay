@@ -5,6 +5,9 @@ type ObsContextValue = {
   status: ObsStatus;
   error: string | null;
   scenes: string[];
+  /** OBS の入力ソース名一覧(ゲームキャプチャ・ディスプレイキャプチャ等)。
+   *  GetSourceScreenshot で使うのは多くの場合こちら。 */
+  inputs: string[];
   currentScene: string | null;
   setScene: (name: string) => Promise<unknown>;
   /** ソースの現在フレームを base64 PNG dataURL で取得(チェイス検知の診断ツール等で使用)。
@@ -33,6 +36,7 @@ export function useObsConnectionContext(): ObsContextValue {
       status: "idle",
       error: null,
       scenes: [],
+      inputs: [],
       currentScene: null,
       setScene: async () => undefined,
       getSourceScreenshot: async () => null,

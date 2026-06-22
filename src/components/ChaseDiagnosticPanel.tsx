@@ -37,7 +37,12 @@ export function ChaseDiagnosticPanel({ value, onChange }: Props) {
     onChange({ ...value, survivorNames: names });
   };
 
-  const { scenes: obsScenes, status: obsStatus } = useObsConnectionContext();
+  const {
+    scenes: obsScenes,
+    inputs: obsInputs,
+    status: obsStatus,
+    error: obsError,
+  } = useObsConnectionContext();
   const [liveRaw, setLiveRaw] = useState<[number, number, number, number]>([0, 0, 0, 0]);
   const [liveSmoothed, setLiveSmoothed] = useState<[number, number, number, number]>([
     0, 0, 0, 0,
@@ -249,36 +254,81 @@ export function ChaseDiagnosticPanel({ value, onChange }: Props) {
         <>
           {/* OBS ソース選択 */}
           <div className="space-y-1">
-            <Label className="text-white text-sm">
-              OBS ゲームソース名
-              {obsStatus !== "live" && (
-                <span className="text-amber-300 text-xs ml-2">⚠ OBS 未接続</span>
-              )}
-            </Label>
-            {obsStatus === "live" && obsScenes.length > 0 ? (
-              <select
-                value={value.obsSourceName}
-                onChange={(e) => set({ obsSourceName: e.target.value })}
-                className="w-full h-9 rounded border border-gray-600 bg-gray-700 px-2 text-sm text-white"
+            <Label className="text-white text-sm flex items-center gap-2">
+              OBS ソース / シーン
+              <span
+                className={
+                  "text-xs " +
+                  (obsStatus === "live"
+                    ? "text-emerald-300"
+                    : obsStatus === "connecting"
+                      ? "text-amber-300"
+                      : "text-red-300")
+                }
               >
-                <option value="">(未選択)</option>
-                {obsScenes.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+                ●{" "}
+                {obsStatus === "live"
+                  ? "接続中"
+                  : obsStatus === "connecting"
+                    ? "接続中..."
+                    : obsStatus === "error"
+                      ? "エラー"
+                      : "未接続"}
+              </span>
+            </Label>
+
+            {obsStatus === "live" ? (
+              <>
+                <select
+                  value={value.obsSourceName}
+                  onChange={(e) => set({ obsSourceName: e.target.value })}
+                  className="w-full h-9 rounded border border-gray-600 bg-gray-700 px-2 text-sm text-white"
+                >
+                  <option value="">(未選択)</option>
+                  {obsInputs.length > 0 && (
+                    <optgroup label="入力ソース(推奨)">
+                      {obsInputs.map((s) => (
+                        <option key={`in-${s}`} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {obsScenes.length > 0 && (
+                    <optgroup label="シーン">
+                      {obsScenes.map((s) => (
+                        <option key={`sc-${s}`} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <p className="text-xs text-gray-500 leading-snug">
+                  💡 ゲーム画面を映している「ゲームキャプチャ」「ディスプレイキャプチャ」
+                  等を選択 (入力ソースから選ぶのが推奨)。
+                  どれを選べば良いか分からなければ シーン名 を選択しても OK。
+                </p>
+              </>
             ) : (
-              <Input
-                value={value.obsSourceName}
-                onChange={(e) => set({ obsSourceName: e.target.value })}
-                placeholder="ソース名(OBS 接続後にドロップダウンになる)"
-                className="font-mono text-sm"
-              />
+              <>
+                <Input
+                  value={value.obsSourceName}
+                  onChange={(e) => set({ obsSourceName: e.target.value })}
+                  placeholder="OBS が接続されるとドロップダウンが出ます"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-amber-300 leading-snug">
+                  ⚠ OBS 未接続: 上の「OBS 連携 (WebSocket)」 セクションで
+                  接続を有効化してください。
+                  {obsError && (
+                    <span className="block text-red-300 mt-0.5">
+                      エラー: {obsError}
+                    </span>
+                  )}
+                </p>
+              </>
             )}
-            <p className="text-xs text-gray-500">
-              ※ OBS シーン名ではなくゲームキャプチャ等の ソース名 を指定
-            </p>
           </div>
 
           {/* ROI 設定 */}

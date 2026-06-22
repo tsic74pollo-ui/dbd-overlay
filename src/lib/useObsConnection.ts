@@ -27,6 +27,7 @@ export function useObsConnection() {
   const [status, setStatusState] = useState<ObsStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [scenes, setScenes] = useState<string[]>([]);
+  const [inputs, setInputs] = useState<string[]>([]); // OBS の入力ソース(ゲームキャプチャ等)
   const [currentScene, setCurrentScene] = useState<string | null>(null);
 
   const setStatus = (s: ObsStatus) => {
@@ -63,6 +64,20 @@ export function useObsConnection() {
         stoppedRef.current = true;
       };
     }
+
+    // 入力ソース(ゲームキャプチャ等)一覧を取得して state に反映する
+    const refreshInputs = async (obs: OBSWebSocket) => {
+      try {
+        const res = await obs.call("GetInputList");
+        // inputs は [{ inputName, inputKind, ... }] の配列
+        const names = (res.inputs ?? [])
+          .map((it) => String((it as { inputName?: string }).inputName ?? ""))
+          .filter((s) => s.length > 0);
+        setInputs(names);
+      } catch {
+        /* ignore */
+      }
+    };
 
     const scheduleRetry = () => {
       if (stoppedRef.current) return;
@@ -105,17 +120,28 @@ export function useObsConnection() {
           /* ignore */
         }
       });
+      // 入力ソース(ゲームキャプチャ・ディスプレイキャプチャ等)の追加/削除を購読
+      obs.on("InputCreated", () => {
+        void refreshInputs(obs);
+      });
+      obs.on("InputRemoved", () => {
+        void refreshInputs(obs);
+      });
+      obs.on("InputNameChanged", () => {
+        void refreshInputs(obs);
+      });
 
       try {
         await obs.connect(config.url, config.password || undefined);
         retryCountRef.current = 0;
         setStatus("live");
 
-        // 接続直後にシーン一覧 + 現在シーンを取得
+        // 接続直後にシーン一覧 + 現在シーン + 入力ソース一覧を取得
         const list = await obs.call("GetSceneList");
         // OBS は順序が逆向きで返ってくる(上から下) ので reverse して見やすく
         setScenes(list.scenes.map((s) => String(s.sceneName)).reverse());
         setCurrentScene(String(list.currentProgramSceneName));
+        await refreshInputs(obs);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setError(msg);
@@ -181,5 +207,13 @@ export function useObsConnection() {
     }
   };
 
-  return { status, error, scenes, currentScene, setScene, getSourceScreenshot };
+  return {
+    status,
+    error,
+    scenes,
+    inputs,
+    currentScene,
+    setScene,
+    getSourceScreenshot,
+  };
 }
