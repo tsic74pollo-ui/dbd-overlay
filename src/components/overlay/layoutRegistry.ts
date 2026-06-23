@@ -1,7 +1,6 @@
 import type { LayoutId } from "@/lib/types";
 import { OverlayLayoutClassic } from "./OverlayLayoutClassic";
 import { OverlayLayoutFloatingPill } from "./OverlayLayoutFloatingPill";
-import { OverlayLayoutMinimalBar } from "./OverlayLayoutMinimalBar";
 import { OverlayLayoutEsportsScore } from "./OverlayLayoutEsportsScore";
 import { OverlayLayoutLowerThird } from "./OverlayLayoutLowerThird";
 import type { LayoutProps } from "./parts/types";
@@ -26,11 +25,6 @@ export const LAYOUTS: Record<
     description: "角丸ピル + ぼかし、個人配信のミニマル",
     Component: OverlayLayoutFloatingPill,
   },
-  "minimal-bar": {
-    label: "Minimal Top Bar",
-    description: "画面最上部 1 行に全情報凝縮、競技汎用",
-    Component: OverlayLayoutMinimalBar,
-  },
   "esports-score": {
     label: "Esports Score Bar",
     description: "公式大会風 5 セルスコアバー(自動スコア集計)",
@@ -47,7 +41,6 @@ export const LAYOUTS: Record<
 export const LAYOUT_IDS: LayoutId[] = [
   "classic",
   "floating-pill",
-  "minimal-bar",
   "esports-score",
   "lower-third",
 ];

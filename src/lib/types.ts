@@ -271,7 +271,6 @@ export type SessionTimer = StopwatchState & {
 export type LayoutId =
   | "classic" // 現行: 縦積み・左上集中・背景ブロック式
   | "floating-pill" // 個人配信向けの丸角ピル + ぼかし
-  | "minimal-bar" // 競技向け 1 行集約
   | "esports-score" // 公式大会風スコアバー(5 セル)
   | "lower-third"; // 放送番組テロップ風(画面下 1/3)
 
