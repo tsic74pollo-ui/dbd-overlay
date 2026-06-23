@@ -279,8 +279,6 @@ export type OverlaySettings = {
   matchLog?: MatchLogWidget;
   /** ルームに紐付ける Lottie アニメーション(イベント発火再生) */
   lottie?: LottieAnimation;
-  /** チェイス検知の診断ツール設定(検知ロジックは持たず、motion energy 可視化のみ) */
-  chaseDiagnostic?: ChaseDiagnosticConfig;
 };
 
 export type Room = {
@@ -299,26 +297,6 @@ export type ObsConfig = {
   enabled: boolean;
   url: string; // 例: ws://127.0.0.1:4455
   password: string;
-};
-
-/** チェイス検知の ROI(関心領域)。ゲームソースの座標 (px) で指定。 */
-export type ChaseRoi = { x: number; y: number; width: number; height: number };
-
-/** チェイス検知の診断ツール用設定。検知ロジックは持たず、生の motion energy を可視化するだけ。 */
-export type ChaseDiagnosticConfig = {
-  enabled: boolean;
-  /** OBS のゲームソース名(画像取得対象) */
-  obsSourceName: string;
-  /** ポーリング FPS(5-15 想定。CPU/帯域とトレードオフ) */
-  pollingFps: number;
-  /** スキルチェック等の黄色ピクセルを動きエネルギー計算から除外する */
-  yellowFilter: boolean;
-  /** 4 サバイバー分の ROI 矩形 */
-  rois: [ChaseRoi, ChaseRoi, ChaseRoi, ChaseRoi];
-  /** 表示名(任意のラベル)。診断画面で各 ROI の識別用 */
-  survivorNames: [string, string, string, string];
-  /** エディタの設定パネルにライブバーを描画するか */
-  showLiveBars: boolean;
 };
 
 export type AppPersistedState = {

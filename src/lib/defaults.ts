@@ -1,7 +1,5 @@
 import type {
   BilingualStyle,
-  ChaseDiagnosticConfig,
-  ChaseRoi,
   Line,
   LottieAnimation,
   MatchLogWidget,
@@ -336,51 +334,6 @@ export const normalizeLottie = (l?: Partial<LottieAnimation>): LottieAnimation =
   ...l,
 });
 
-// チェイス検知 ROI の 1080p 既定プリセット(目視測定値)
-// ポートレート右隣の「||」 マーク出現エリアを 50x30px で囲む。HUD 100% 想定。
-// 解像度や HUD スケールが違う場合はユーザーが ChaseDiagnosticPanel で微調整。
-export const PRESET_CHASE_ROIS_1080P: [ChaseRoi, ChaseRoi, ChaseRoi, ChaseRoi] = [
-  { x: 165, y: 458, width: 50, height: 30 }, // [0] あああ
-  { x: 165, y: 548, width: 50, height: 30 }, // [1] 佐々木のあ
-  { x: 165, y: 638, width: 50, height: 30 }, // [2] riko
-  { x: 165, y: 728, width: 50, height: 30 }, // [3] Nakumo_GGs
-];
-
-export const defaultChaseDiagnostic = (): ChaseDiagnosticConfig => ({
-  enabled: false,
-  obsSourceName: "",
-  pollingFps: 8,
-  yellowFilter: true,
-  rois: [
-    { ...PRESET_CHASE_ROIS_1080P[0] },
-    { ...PRESET_CHASE_ROIS_1080P[1] },
-    { ...PRESET_CHASE_ROIS_1080P[2] },
-    { ...PRESET_CHASE_ROIS_1080P[3] },
-  ],
-  survivorNames: ["P1", "P2", "P3", "P4"],
-  showLiveBars: true,
-});
-
-export const normalizeChaseDiagnostic = (
-  c?: Partial<ChaseDiagnosticConfig>,
-): ChaseDiagnosticConfig => {
-  const d = defaultChaseDiagnostic();
-  if (!c) return d;
-  // rois と survivorNames は固定 4 要素の配列なので明示マージ
-  const rois = (Array.isArray(c.rois) && c.rois.length === 4
-    ? c.rois
-    : d.rois) as ChaseDiagnosticConfig["rois"];
-  const survivorNames = (Array.isArray(c.survivorNames) && c.survivorNames.length === 4
-    ? c.survivorNames
-    : d.survivorNames) as ChaseDiagnosticConfig["survivorNames"];
-  return {
-    ...d,
-    ...c,
-    rois,
-    survivorNames,
-  };
-};
-
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [
   { key: "1080p-80", label: "1080p / HUD 80%", rect: { x: 88.5, y: 79, width: 10.5, height: 19 } },
@@ -395,7 +348,6 @@ export const defaultSettings = (): OverlaySettings => ({
   sessionTimer: defaultSessionTimer(),
   bilingualStyle: defaultBilingualStyle(),
   matchLog: defaultMatchLog(),
-  chaseDiagnostic: defaultChaseDiagnostic(),
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({
