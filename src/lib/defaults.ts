@@ -348,6 +348,7 @@ export const defaultSettings = (): OverlaySettings => ({
   sessionTimer: defaultSessionTimer(),
   bilingualStyle: defaultBilingualStyle(),
   matchLog: defaultMatchLog(),
+  layoutId: "classic",
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({

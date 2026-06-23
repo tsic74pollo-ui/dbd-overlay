@@ -266,6 +266,15 @@ export type SessionTimer = StopwatchState & {
   label: string;
 };
 
+/** オーバーレイの全体レイアウトテンプレート ID。
+ *  内容データ(lines/timer 等)は保持したまま、視覚層だけを差し替える。 */
+export type LayoutId =
+  | "classic" // 現行: 縦積み・左上集中・背景ブロック式
+  | "floating-pill" // 個人配信向けの丸角ピル + ぼかし
+  | "minimal-bar" // 競技向け 1 行集約
+  | "esports-score" // 公式大会風スコアバー(5 セル)
+  | "lower-third"; // 放送番組テロップ風(画面下 1/3)
+
 export type OverlaySettings = {
   iconImage: string;
   lines: Line[];
@@ -279,6 +288,8 @@ export type OverlaySettings = {
   matchLog?: MatchLogWidget;
   /** ルームに紐付ける Lottie アニメーション(イベント発火再生) */
   lottie?: LottieAnimation;
+  /** オーバーレイのレイアウトテンプレート。未指定なら "classic" 扱い(後方互換) */
+  layoutId?: LayoutId;
 };
 
 export type Room = {

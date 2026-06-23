@@ -411,3 +411,15 @@ input[type="color"]::-webkit-color-swatch {
 }
 /* diamond は既存定義のまま（明示クラス無しでも動く） */
 
+
+/* Lower Third レイアウトのスライドインアニメ */
+@keyframes lowerThirdSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

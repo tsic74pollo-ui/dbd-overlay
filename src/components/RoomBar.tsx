@@ -20,6 +20,8 @@ import {
   mergeRoomsById,
   readSnapshots,
 } from "@/lib/backup";
+import { LAYOUTS, LAYOUT_IDS } from "@/components/overlay/layoutRegistry";
+import type { LayoutId } from "@/lib/types";
 
 export function RoomBar({ onOpenApiKey }: { onOpenApiKey: () => void }) {
   const rooms = useAppStore((s) => s.rooms);
@@ -30,6 +32,7 @@ export function RoomBar({ onOpenApiKey }: { onOpenApiKey: () => void }) {
   const remove = useAppStore((s) => s.removeRoom);
   const rename = useAppStore((s) => s.renameRoom);
   const setRooms = useAppStore((s) => s.setRooms);
+  const update = useAppStore((s) => s.updateActiveRoomSettings);
   const apiKey = useAppStore((s) => s.apiKey);
   const status = useConnectionStore((s) => s.status);
 
@@ -199,6 +202,28 @@ export function RoomBar({ onOpenApiKey }: { onOpenApiKey: () => void }) {
           <Trash2 className="w-4 h-4" />
           削除
         </Button>
+
+        <div className="mx-2 h-6 w-px bg-gray-700" />
+
+        <label
+          className="text-xs text-gray-400 flex items-center gap-1.5"
+          title="オーバーレイ全体の見た目テンプレート(ルームごと記憶)"
+        >
+          レイアウト:
+          <select
+            value={active.settings.layoutId ?? "classic"}
+            onChange={(e) =>
+              update((s) => ({ ...s, layoutId: e.target.value as LayoutId }))
+            }
+            className="h-8 rounded border border-gray-600 bg-gray-700 px-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+          >
+            {LAYOUT_IDS.map((id) => (
+              <option key={id} value={id} title={LAYOUTS[id].description}>
+                {LAYOUTS[id].label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <div className="mx-2 h-6 w-px bg-gray-700" />
 

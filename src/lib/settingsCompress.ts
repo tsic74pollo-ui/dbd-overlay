@@ -96,6 +96,8 @@ export const compressSettings = (
   out.iconImage = s.iconImage;
   out.lines = s.lines;
   if (s.align && s.align !== "left") out.align = s.align;
+  // layoutId は "classic" 以外のみ送信(default 比較で剥がす)
+  if (s.layoutId && s.layoutId !== "classic") out.layoutId = s.layoutId;
   if (s.perkCover) {
     const c = compressPerkCover(s.perkCover);
     if (Object.keys(c).length > 0) out.perkCover = c as PerkCover;
@@ -132,6 +134,7 @@ export const decompressSettings = (
     iconImage: s.iconImage ?? "",
     lines: s.lines ?? [],
     align: s.align ?? "left",
+    layoutId: s.layoutId ?? "classic",
     perkCover: s.perkCover
       ? normalizePerkCover(s.perkCover as Partial<PerkCover>)
       : undefined,
