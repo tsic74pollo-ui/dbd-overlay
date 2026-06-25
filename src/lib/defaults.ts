@@ -173,6 +173,7 @@ export const defaultMatchTimer = (): MatchTimer => {
     startedAt: null,
     accumulatedMs: 0,
     running: false,
+    style: "classic",
   };
 };
 

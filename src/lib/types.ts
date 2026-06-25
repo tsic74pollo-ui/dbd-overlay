@@ -244,6 +244,12 @@ export type PerkCover = Rect & {
   forceReleased?: boolean;
 };
 
+/** マッチタイマーの表示スタイル(V3 で追加)。
+ *  - "classic": 従来の半透明角丸ボックス + 上にラベル + 下に時刻
+ *  - "bracket": 角括弧フレーム + 上ラベル、esports 競技風(背景透過)
+ *  - "digital": LED スコアボード風、モノスペース + 光る digits、黒地 */
+export type MatchTimerStyle = "classic" | "bracket" | "digital";
+
 // 左下のマッチタイマー（カウントアップ）
 export type MatchTimer = StopwatchState & {
   enabled: boolean;
@@ -252,6 +258,8 @@ export type MatchTimer = StopwatchState & {
   color: string;
   fontScale: number;
   label: string;
+  /** 表示スタイル。未指定なら "classic"(後方互換) */
+  style?: MatchTimerStyle;
 };
 
 /** 通しタイマー(OBS録画時間記録用)。マッチタイマーと違い、Live/録画終了まで

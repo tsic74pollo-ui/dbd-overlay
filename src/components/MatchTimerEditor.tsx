@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Play, Pause, RotateCcw, Save } from "lucide-react";
-import type { MatchTimer } from "@/lib/types";
+import type { MatchTimer, MatchTimerStyle } from "@/lib/types";
 import { startSw, stopSw, resetSw } from "@/lib/timer";
 // 注: ホットキー T は「開始/リセット」のサイクル動作 (toggle ではない)。
 // この編集UI側は微調整用に「開始 / 停止(=ポーズ) / リセット」を 3 ボタンで提供している。
@@ -38,6 +38,38 @@ export function MatchTimerEditor({ value, onChange }: Props) {
 
       {value.enabled && (
         <>
+          {/* 表示スタイル(3 種) */}
+          <div className="space-y-1">
+            <Label className="text-white text-sm">表示スタイル</Label>
+            <div className="grid grid-cols-3 gap-1.5">
+              {(
+                [
+                  { v: "classic", label: "Classic", hint: "従来の半透明角丸ボックス" },
+                  { v: "bracket", label: "Bracket", hint: "[ TIME ] 角括弧フレーム" },
+                  { v: "digital", label: "Digital", hint: "LED スコアボード風(光る)" },
+                ] as { v: MatchTimerStyle; label: string; hint: string }[]
+              ).map((opt) => {
+                const active = (value.style ?? "classic") === opt.v;
+                return (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => set({ style: opt.v })}
+                    title={opt.hint}
+                    className={
+                      "px-2 py-2 rounded border text-xs font-semibold transition " +
+                      (active
+                        ? "bg-orange-500 border-orange-400 text-white"
+                        : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex items-center gap-2">
             <Label className="text-white text-sm flex-1">ラベル</Label>
             <Input
