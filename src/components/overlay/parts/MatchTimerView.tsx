@@ -104,6 +104,114 @@ export function MatchTimerView({
     );
   }
 
+  if (style === "pill") {
+    // 角丸ピル + グラデ背景、横並び(ラベル: 時刻)
+    return (
+      <div
+        className={dragClass}
+        style={{
+          ...wrapperStyle,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: `${mt.fontScale * 10}px`,
+          background:
+            "linear-gradient(135deg, rgba(35,35,45,0.85), rgba(15,15,22,0.85))",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          padding: `${mt.fontScale * 5}px ${mt.fontScale * 18}px`,
+          borderRadius: 9999,
+          border: "1px solid rgba(255,255,255,0.12)",
+          boxShadow: "0 4px 14px rgba(0,0,0,0.4)",
+          textShadow: "1px 1px 2px rgba(0,0,0,0.85)",
+          color: mt.color,
+        }}
+        {...dragAttrs}
+      >
+        {mt.label && (
+          <span
+            style={{
+              fontSize: `${mt.fontScale * 10}px`,
+              fontWeight: 700,
+              letterSpacing: "0.18em",
+              opacity: 0.65,
+              textTransform: "uppercase",
+            }}
+          >
+            {mt.label}
+          </span>
+        )}
+        <span
+          style={{
+            fontSize: `${mt.fontScale * 24}px`,
+            fontWeight: 900,
+            letterSpacing: "0.04em",
+            lineHeight: 1,
+            fontFamily: "'Roboto Mono', 'Courier New', monospace",
+          }}
+        >
+          {timeStr}
+        </span>
+      </div>
+    );
+  }
+
+  if (style === "neon") {
+    // 透明背景 + アウトライン文字 + ネオン点滅、DBD ホラー寄り
+    const fontPx = mt.fontScale * 32;
+    return (
+      <div
+        className={cn(dragClass, "match-timer-neon", mt.running && "running")}
+        style={{
+          ...wrapperStyle,
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: "flex-start",
+          gap: 4,
+          // CSS で参照する mt.color
+          ["--mt-neon-color" as string]: mt.color,
+        }}
+        {...dragAttrs}
+      >
+        {mt.label && (
+          <span
+            style={{
+              fontSize: `${mt.fontScale * 11}px`,
+              fontWeight: 700,
+              letterSpacing: "0.4em",
+              opacity: 0.9,
+              color: mt.color,
+              textTransform: "uppercase",
+              textShadow: `0 0 6px ${mt.color}, 0 0 12px ${mt.color}80`,
+              paddingLeft: 4,
+            }}
+          >
+            {mt.label}
+          </span>
+        )}
+        <span
+          style={{
+            fontSize: `${fontPx}px`,
+            fontFamily: "'Roboto Mono', 'Courier New', monospace",
+            fontWeight: 700,
+            letterSpacing: "0.05em",
+            color: "transparent",
+            WebkitTextStroke: `1.5px ${mt.color}`,
+            // ネオン管的な多層 glow
+            textShadow: `
+              0 0 4px ${mt.color},
+              0 0 10px ${mt.color},
+              0 0 22px ${mt.color}aa,
+              0 0 44px ${mt.color}66
+            `,
+            lineHeight: 1,
+          }}
+        >
+          {timeStr}
+        </span>
+      </div>
+    );
+  }
+
   if (style === "digital") {
     // LED スコアボード風: 黒地 + 光る digits、モノスペース、ベゼル
     const fontPx = mt.fontScale * 32;

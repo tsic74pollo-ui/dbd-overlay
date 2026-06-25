@@ -38,7 +38,7 @@ export function MatchTimerEditor({ value, onChange }: Props) {
 
       {value.enabled && (
         <>
-          {/* 表示スタイル(3 種) */}
+          {/* 表示スタイル(5 種) */}
           <div className="space-y-1">
             <Label className="text-white text-sm">表示スタイル</Label>
             <div className="grid grid-cols-3 gap-1.5">
@@ -47,6 +47,8 @@ export function MatchTimerEditor({ value, onChange }: Props) {
                   { v: "classic", label: "Classic", hint: "従来の半透明角丸ボックス" },
                   { v: "bracket", label: "Bracket", hint: "[ TIME ] 角括弧フレーム" },
                   { v: "digital", label: "Digital", hint: "LED スコアボード風(光る)" },
+                  { v: "pill", label: "Pill", hint: "角丸ピル + グラデ・横並び" },
+                  { v: "neon", label: "Neon", hint: "ネオン管アウトライン + 点滅" },
                 ] as { v: MatchTimerStyle; label: string; hint: string }[]
               ).map((opt) => {
                 const active = (value.style ?? "classic") === opt.v;

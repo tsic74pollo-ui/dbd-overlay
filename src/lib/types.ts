@@ -247,8 +247,10 @@ export type PerkCover = Rect & {
 /** マッチタイマーの表示スタイル(V3 で追加)。
  *  - "classic": 従来の半透明角丸ボックス + 上にラベル + 下に時刻
  *  - "bracket": 角括弧フレーム + 上ラベル、esports 競技風(背景透過)
- *  - "digital": LED スコアボード風、モノスペース + 光る digits、黒地 */
-export type MatchTimerStyle = "classic" | "bracket" | "digital";
+ *  - "digital": LED スコアボード風、モノスペース + 光る digits、黒地
+ *  - "pill":    角丸ピル + グラデ背景、横並び(Floating Pill レイアウトと相性◎)
+ *  - "neon":    透明背景 + アウトライン文字 + ネオン点滅(DBD ホラー寄り) */
+export type MatchTimerStyle = "classic" | "bracket" | "digital" | "pill" | "neon";
 
 // 左下のマッチタイマー（カウントアップ）
 export type MatchTimer = StopwatchState & {
