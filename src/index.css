@@ -462,3 +462,15 @@ input[type="color"]::-webkit-color-swatch {
     filter: brightness(1.3);
   }
 }
+
+/* CaptionView (LocalVocal 字幕)のスライドイン */
+@keyframes captionSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

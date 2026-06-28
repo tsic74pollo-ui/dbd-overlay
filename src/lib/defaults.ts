@@ -1,6 +1,8 @@
 import type {
   BilingualStyle,
+  CaptionWidget,
   Line,
+  LocalVocalConfig,
   LottieAnimation,
   MatchLogWidget,
   MatchTimer,
@@ -155,6 +157,7 @@ export const defaultPerkCover = (): PerkCover => {
     urgentBelowSec: 10,
   },
   forceReleased: false,
+  mirror: false,
   };
 };
 
@@ -231,6 +234,7 @@ export const normalizePerkCover = (pc?: Partial<PerkCover>): PerkCover => {
     glow: mergedGlow,
     timer: { ...d.timer, ...pc.timer },
     forceReleased: pc.forceReleased ?? false,
+    mirror: pc.mirror ?? false,
   };
 };
 
@@ -335,6 +339,35 @@ export const normalizeLottie = (l?: Partial<LottieAnimation>): LottieAnimation =
   ...l,
 });
 
+// LocalVocal(OBS プラグイン)からの音声→翻訳 WebSocket 接続設定の既定値。
+export const defaultLocalVocal = (): LocalVocalConfig => ({
+  enabled: false,
+  url: "ws://127.0.0.1:9999",
+});
+
+// 画面下キャプション(LocalVocal 受信字幕)ウィジェットの既定値。
+// 既定は disabled、配置は画面下 (x:10, y:78, width:80%)、durationMs 6 秒、最大 2 行。
+export const defaultCaption = (): CaptionWidget => ({
+  enabled: false,
+  x: 10,
+  y: 78,
+  width: 80,
+  showJa: true,
+  showEn: true,
+  durationMs: 6000,
+  maxVisibleLines: 2,
+  fontScale: 1,
+  jaColor: "#FFFFFF",
+  enColor: "#FFE082",
+  bgColor: "#000000",
+  bgOpacity: 0.55,
+});
+
+export const normalizeCaption = (c?: Partial<CaptionWidget>): CaptionWidget => ({
+  ...defaultCaption(),
+  ...c,
+});
+
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [
   { key: "1080p-80", label: "1080p / HUD 80%", rect: { x: 88.5, y: 79, width: 10.5, height: 19 } },
@@ -350,6 +383,7 @@ export const defaultSettings = (): OverlaySettings => ({
   bilingualStyle: defaultBilingualStyle(),
   matchLog: defaultMatchLog(),
   layoutId: "classic",
+  caption: defaultCaption(),
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({

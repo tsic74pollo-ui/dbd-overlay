@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   AppPersistedState,
+  LocalVocalConfig,
   MatchResult,
   ObsConfig,
   OverlaySettings,
@@ -10,6 +11,7 @@ import type {
 } from "@/lib/types";
 import { isSetsLine } from "@/lib/types";
 import {
+  defaultLocalVocal,
   defaultObsConfig,
   newRoom,
   normalizePerkCover,
@@ -34,6 +36,8 @@ type AppActions = {
   setApiKey: (key: string | null) => void;
   /** OBS WebSocket 設定 */
   setObsConfig: (patch: Partial<ObsConfig>) => void;
+  /** LocalVocal(OBS プラグイン)WebSocket 設定 */
+  setLocalVocalConfig: (patch: Partial<LocalVocalConfig>) => void;
   /** マッチ結果を 1 件記録 + matchTimer リセット + 現マッチクリア
    *
    * isPowered=true: kills/stages を尊重(0-4 / 0-12)
@@ -79,6 +83,7 @@ const buildInitialState = (): AppPersistedState => {
     activeRoomId: first.id,
     apiKey: null,
     obs: defaultObsConfig(),
+    localVocal: defaultLocalVocal(),
   };
 };
 
@@ -150,6 +155,9 @@ export const useAppStore = create<AppStore>()(
       },
       setObsConfig: (patch) => {
         set({ obs: { ...get().obs, ...patch } });
+      },
+      setLocalVocalConfig: (patch) => {
+        set({ localVocal: { ...get().localVocal, ...patch } });
       },
       updateActiveRoomSettings: (updater) => {
         const id = get().activeRoomId;
@@ -441,14 +449,16 @@ export const useAppStore = create<AppStore>()(
         activeRoomId: s.activeRoomId,
         apiKey: s.apiKey,
         obs: s.obs,
+        localVocal: s.localVocal,
       }),
-      // 古い localStorage に obs が無いケースに備えて merge を明示
+      // 古い localStorage に obs / localVocal が無いケースに備えて merge を明示
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppPersistedState>;
         return {
           ...current,
           ...p,
           obs: { ...defaultObsConfig(), ...(p.obs ?? {}) },
+          localVocal: { ...defaultLocalVocal(), ...(p.localVocal ?? {}) },
         } as AppPersistedState & typeof current;
       },
     },

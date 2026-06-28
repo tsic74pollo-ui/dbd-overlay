@@ -19,12 +19,16 @@ import { HotkeyToast } from "@/components/HotkeyToast";
 import { useRemoteCommandHost } from "@/lib/useRemoteCommandHost";
 import { useEffectiveHotkeys } from "@/lib/useEffectiveHotkeys";
 import { ObsConnectionProvider } from "@/lib/obsConnectionContext";
+import { LocalVocalProvider, useLocalVocalContext } from "@/lib/localVocalContext";
+import { useCaptionPublisher } from "@/lib/useCaptionPublisher";
 import { useCallback } from "react";
 
 export function EditorPage() {
   return (
     <ObsConnectionProvider>
-      <EditorPageInner />
+      <LocalVocalProvider>
+        <EditorPageInner />
+      </LocalVocalProvider>
     </ObsConnectionProvider>
   );
 }
@@ -65,6 +69,11 @@ function EditorPageInner() {
   useRoomsSync();
   // ルーム情報を自動でローカルにスナップショット保存（誤削除・データ消失対策）
   useAutoBackup();
+
+  // LocalVocal からの受信メッセージを全ルームの caption channel へ broadcast
+  useCaptionPublisher();
+  // エディタプレビュー用に最新キャプションを取得(LocalVocal context から)
+  const { incoming: editorCaption } = useLocalVocalContext();
 
   if (!room) return null;
 
@@ -121,6 +130,7 @@ function EditorPageInner() {
               <OverlayView
                 settings={room.settings}
                 editable={dragEnabled}
+                captionIncoming={editorCaption}
                 onMovePerkCover={(x, y) =>
                   updateSettings((s) => ({
                     ...s,

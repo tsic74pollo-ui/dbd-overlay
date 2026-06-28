@@ -2,6 +2,7 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
   normalizeBilingualStyle,
+  normalizeCaption,
   normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
@@ -11,6 +12,7 @@ import {
 import type {
   Align,
   BilingualStyle,
+  CaptionWidget,
   Line,
   LottieAnimation,
   MatchLogWidget,
@@ -36,6 +38,8 @@ import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
 import { HotkeySettings } from "@/components/HotkeySettings";
+import { LocalVocalPanel } from "@/components/LocalVocalPanel";
+import { CaptionEditor } from "@/components/CaptionEditor";
 
 export function SettingsPanel() {
   const room = useAppStore(selectActiveRoom);
@@ -77,6 +81,10 @@ export function SettingsPanel() {
     update((s) => ({ ...s, lottie: next }));
   };
 
+  const setCaption = (next: CaptionWidget) => {
+    update((s) => ({ ...s, caption: next }));
+  };
+
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -95,6 +103,10 @@ export function SettingsPanel() {
       <HotkeySettings />
 
       <ObsConnectionPanel />
+
+      <LocalVocalPanel />
+
+      <CaptionEditor value={normalizeCaption(settings.caption)} onChange={setCaption} />
 
       <RoomActivationEditor />
 

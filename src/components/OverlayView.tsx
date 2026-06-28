@@ -6,7 +6,9 @@ import { LottiePlayer } from "@/components/LottiePlayer";
 import { PerkCoverView } from "@/components/overlay/parts/PerkCoverView";
 import { MatchTimerView } from "@/components/overlay/parts/MatchTimerView";
 import { SessionTimerView } from "@/components/overlay/parts/SessionTimerView";
+import { CaptionView } from "@/components/overlay/parts/CaptionView";
 import { LAYOUTS } from "@/components/overlay/layoutRegistry";
+import type { CaptionMessage } from "@/lib/types";
 
 type Props = {
   settings: OverlaySettings;
@@ -16,6 +18,9 @@ type Props = {
   onMoveMatchTimer?: (x: number, y: number) => void;
   onMoveSessionTimer?: (x: number, y: number) => void;
   onMoveMatchLog?: (x: number, y: number) => void;
+  /** 親から差し込まれるキャプションメッセージ。
+   *  EditorPage では LocalVocal context から、OverlayPage では caption channel から渡す。 */
+  captionIncoming?: CaptionMessage | null;
 };
 
 /**
@@ -33,6 +38,7 @@ export function OverlayView({
   onMoveMatchTimer,
   onMoveSessionTimer,
   onMoveMatchLog,
+  captionIncoming,
 }: Props) {
   const { perkCover, matchTimer, sessionTimer, lines } = settings;
   const lottie = settings.lottie;
@@ -185,6 +191,11 @@ export function OverlayView({
       {/* 共通: Lottie アニメーション */}
       {lottie?.enabled && (
         <LottiePlayer animation={lottie} playSignal={lottiePlaySignal} />
+      )}
+
+      {/* 共通: 画面下キャプション(LocalVocal 音声翻訳字幕) */}
+      {settings.caption?.enabled && (
+        <CaptionView config={settings.caption} incoming={captionIncoming ?? null} />
       )}
     </div>
   );

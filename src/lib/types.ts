@@ -221,6 +221,9 @@ export type PerkCoverTimer = StopwatchState & {
   urgentBelowSec?: number;
 };
 
+/** パークカバーの視点(0=Killer 右下、1=Survivor 左下)。
+ *  mirror=true なら x を水平反転して反対側に描画。
+ *  Killer 配信 と Survivor 配信を 1 ボタンで切替えるために導入。 */
 // 右下のパーク隠しカバー
 export type PerkCover = Rect & {
   enabled: boolean;
@@ -242,6 +245,12 @@ export type PerkCover = Rect & {
    * リビール後 3 秒程度で自動的に false へ戻す(次回利用のため)。
    */
   forceReleased?: boolean;
+  /**
+   * 視点反転(false=Killer 右下/true=Survivor 左下)。
+   * 内部的には x 値を `100 - x - width` で水平反転して描画する。
+   * オリジナルの x/y は store に保存したまま描画時のみ変換 → 視点切替で元位置が壊れない。
+   */
+  mirror?: boolean;
 };
 
 /** マッチタイマーの表示スタイル(V3 で追加)。
@@ -299,6 +308,8 @@ export type OverlaySettings = {
   lottie?: LottieAnimation;
   /** オーバーレイのレイアウトテンプレート。未指定なら "classic" 扱い(後方互換) */
   layoutId?: LayoutId;
+  /** 画面下のキャプション(LocalVocal 音声翻訳)ウィジェット設定 */
+  caption?: CaptionWidget;
 };
 
 export type Room = {
@@ -319,11 +330,60 @@ export type ObsConfig = {
   password: string;
 };
 
+/** LocalVocal(OBS プラグイン)からの音声→翻訳キャプションを受け取る WebSocket 接続設定。
+ *  OBS WebSocket(ObsConfig)とは別の独立した経路。 */
+export type LocalVocalConfig = {
+  enabled: boolean;
+  url: string; // 例: ws://127.0.0.1:9999
+};
+
+/** LocalVocal から受信した 1 メッセージ。Supabase chase:<roomId> 専用チャネルで /overlay に流す。 */
+export type CaptionMessage = {
+  /** UUID。受信側で重複排除に使う(broadcast の echo を防ぐ) */
+  id: string;
+  /** 日本語(原文) */
+  ja: string;
+  /** 英訳 */
+  en: string;
+  /** クライアント受信時刻 (Date.now() ベース) */
+  receivedAtMs: number;
+  /** 表示継続時間 ms。既定 6000 */
+  durationMs: number;
+  /** partial(暫定) / final(確定)。partial は broadcast せずスキップする想定 */
+  isFinal: boolean;
+};
+
+/** 画面下に YouTube 風キャプションを表示するウィジェット。 */
+export type CaptionWidget = {
+  enabled: boolean;
+  /** 配置 % */
+  x: number;
+  y: number;
+  width: number;
+  /** JA / EN それぞれ表示するか(片方だけ使う運用にも対応) */
+  showJa: boolean;
+  showEn: boolean;
+  /** 各キャプション表示時間 ms */
+  durationMs: number;
+  /** 同時表示の最大行数。超えた古いものから消える */
+  maxVisibleLines: number;
+  /** フォントサイズ倍率 */
+  fontScale: number;
+  /** JA テキスト色 */
+  jaColor: string;
+  /** EN テキスト色 */
+  enColor: string;
+  /** 背景色 / 不透明度 */
+  bgColor: string;
+  bgOpacity: number;
+};
+
 export type AppPersistedState = {
   rooms: Room[];
   activeRoomId: string;
   apiKey: string | null;
   obs: ObsConfig;
+  localVocal: LocalVocalConfig;
 };
 
 export const isSetsLine = (line: Line): line is SetsLine =>

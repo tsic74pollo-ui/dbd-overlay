@@ -4,6 +4,7 @@ import type { OverlaySettings } from "@/lib/types";
 import { OverlayView } from "@/components/OverlayView";
 import { joinRoom } from "@/lib/realtimeSync";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { useCaptionReceiver } from "@/lib/useCaptionReceiver";
 
 export function OverlayPage() {
   const [params] = useSearchParams();
@@ -39,6 +40,9 @@ export function OverlayPage() {
     return () => handle?.unsubscribe();
   }, [roomId]);
 
+  // LocalVocal キャプション受信(caption:<roomId> チャネル)
+  const { incoming: captionIncoming } = useCaptionReceiver(roomId);
+
   // Fatal config issues — show error only when we have nothing else to show
   if (fatal && !settings) {
     return (
@@ -57,7 +61,7 @@ export function OverlayPage() {
   // even if the connection drops or errors out. This protects live streams.
   return (
     <>
-      <OverlayView settings={settings} />
+      <OverlayView settings={settings} captionIncoming={captionIncoming} />
       {debug && (
         <div
           style={{
