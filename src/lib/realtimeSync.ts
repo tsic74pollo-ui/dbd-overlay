@@ -28,10 +28,6 @@ export function joinRoom(
   events: SyncEvents,
 ): Handle | null {
   const client = getAbly();
-  if (!client) {
-    events.onStatus?.("error", "Ably が未設定です。VITE_ABLY_KEY を設定してください。");
-    return null;
-  }
 
   let stopped = false;
   let viewerCount = 0;

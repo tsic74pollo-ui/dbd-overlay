@@ -24,10 +24,6 @@ export function joinCommandChannel(
   events: CommandEvents,
 ): CommandHandle | null {
   const client = getAbly();
-  if (!client) {
-    events.onStatus?.("error", "Ably 未設定");
-    return null;
-  }
 
   let stopped = false;
   const channel: RealtimeChannel = client.channels.get(channelName(roomId));
