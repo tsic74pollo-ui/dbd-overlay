@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useAppStore } from "@/store/appStore";
 import { useConnectionStore, type ConnectionStatus } from "@/store/connectionStore";
 import { joinRoom } from "@/lib/realtimeSync";
-import { isSupabaseConfigured } from "@/lib/supabase";
 
 type Handle = ReturnType<typeof joinRoom>;
 
@@ -65,10 +64,6 @@ export function useRoomsSync() {
 
   // ルームの追加/削除に合わせて handle を開閉
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setStatus("error", "Supabase 未設定 (.env.local を設定してください)");
-      return;
-    }
     const ids = useAppStore.getState().rooms.map((r) => r.id);
 
     for (const id of ids) {

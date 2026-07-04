@@ -7,7 +7,6 @@ import {
   type CommandStatus,
 } from "@/lib/realtimeCommand";
 import { joinRoom } from "@/lib/realtimeSync";
-import { isSupabaseConfigured } from "@/lib/supabase";
 import type { OverlaySettings } from "@/lib/types";
 import { HOTKEY_ACTIONS } from "@/lib/hotkeyActions";
 import { cn } from "@/lib/cn";
@@ -50,11 +49,6 @@ export function RemotePage() {
 
   useEffect(() => {
     if (!roomId) return;
-    if (!isSupabaseConfigured) {
-      setStatus("error");
-      return;
-    }
-
     const cmd = joinCommandChannel(roomId, "remote", {
       onStatus: setStatus,
     });

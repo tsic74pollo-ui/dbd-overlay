@@ -154,47 +154,26 @@ export type StopwatchState = {
 
 export type PerkCoverFit = "contain" | "cover" | "fill";
 
-// カバーの形状
-export type PerkCoverShape = "diamond" | "roundedSquare" | "circle" | "hexagon";
+// カバーの形状（厳選: 2種）
+export type PerkCoverShape = "diamond" | "roundedSquare";
 
-// 開放アニメーション
-export type PerkCoverReveal = "fade" | "iris" | "slideDown" | "dissolve" | "flash";
+// 開放アニメーション（厳選: 2種）
+export type PerkCoverReveal = "fade" | "slideDown";
 
-/** 枠グローの表現スタイル(単一選択)。V2から導入。boolean排他の組合せを型レベルで防ぐ。 */
+/** 枠グローの表現スタイル(単一選択・厳選4種)。 */
 export type PerkCoverGlowStyle =
-  | "solid" // 単色グロー(回転なし)。旧 glow-static
-  | "neon" // 1色のネオン明滅。旧 neonPulse
+  | "solid" // 単色グロー(回転なし)
+  | "neon" // 1色のネオン明滅
   | "rainbow" // 虹色 conic 回転
-  | "flow" // 単色 + 白ハイライト回転
-  | "audio" // 音量に反応して脈動
-  | "heartbeat" // 心音 / Terror Radius 風の二拍子鼓動
-  | "crack" // 亀裂走る(ガラスにヒビ風の点滅)
-  | "hexFlame" // 呪火(オレンジ/赤のチラチラ揺らぎ。color 無視)
-  | "breathing" // 緩やかな呼吸(明滅ゆっくり)
-  | "chase" // チェイス(速く強いパルス)
-  | "scratchmark"; // スクラッチマーク風 (破線が回転)
-
-/** "audio" スタイル時の入力・反応設定 */
-export type AudioReactiveConfig = {
-  /** 入力デバイス ID(undefined ならブラウザ規定) */
-  deviceId?: string;
-  /** 反応の閾値(0..1)。これ未満は反応しない */
-  threshold: number;
-  /** ゲイン倍率(0..3)。マイクが小さい人向け */
-  gain: number;
-  /** 周波数帯。"all" は RMS 全帯域、"bass" は ~200Hz以下、"treble" は ~4kHz以上 */
-  band: "all" | "bass" | "treble";
-};
+  | "heartbeat"; // 心音 / Terror Radius 風の二拍子鼓動（DBD らしさ）
 
 export type PerkCoverGlow = {
   enabled: boolean;
   style: PerkCoverGlowStyle;
   colorByTimer: boolean; // 残時間で色変化(灰→黄→赤)。どの style にも乗る直交修飾
   color: string;
-  /** 既存スタイル: 回転速度。audio: 反応のなめらかさ(smoothing) */
+  /** 回転/明滅速度 */
   speedSec: number;
-  /** audio スタイル時のみ参照 */
-  audio?: AudioReactiveConfig;
 
   // ---- Legacy fields(読み取り専用 / 互換のため残置)----
   // 古い JSON / localStorage から読むときに style を推論するためだけに残す。
@@ -259,7 +238,7 @@ export type PerkCover = Rect & {
  *  - "digital": LED スコアボード風、モノスペース + 光る digits、黒地
  *  - "pill":    角丸ピル + グラデ背景、横並び(Floating Pill レイアウトと相性◎)
  *  - "neon":    透明背景 + アウトライン文字 + ネオン点滅(DBD ホラー寄り) */
-export type MatchTimerStyle = "classic" | "bracket" | "digital" | "pill" | "neon";
+export type MatchTimerStyle = "classic" | "digital" | "pill";
 
 // 左下のマッチタイマー（カウントアップ）
 export type MatchTimer = StopwatchState & {
@@ -308,8 +287,6 @@ export type OverlaySettings = {
   lottie?: LottieAnimation;
   /** オーバーレイのレイアウトテンプレート。未指定なら "classic" 扱い(後方互換) */
   layoutId?: LayoutId;
-  /** 画面下のキャプション(LocalVocal 音声翻訳)ウィジェット設定 */
-  caption?: CaptionWidget;
 };
 
 export type Room = {
@@ -330,60 +307,10 @@ export type ObsConfig = {
   password: string;
 };
 
-/** LocalVocal(OBS プラグイン)からの音声→翻訳キャプションを受け取る WebSocket 接続設定。
- *  OBS WebSocket(ObsConfig)とは別の独立した経路。 */
-export type LocalVocalConfig = {
-  enabled: boolean;
-  url: string; // 例: ws://127.0.0.1:9999
-};
-
-/** LocalVocal から受信した 1 メッセージ。Supabase chase:<roomId> 専用チャネルで /overlay に流す。 */
-export type CaptionMessage = {
-  /** UUID。受信側で重複排除に使う(broadcast の echo を防ぐ) */
-  id: string;
-  /** 日本語(原文) */
-  ja: string;
-  /** 英訳 */
-  en: string;
-  /** クライアント受信時刻 (Date.now() ベース) */
-  receivedAtMs: number;
-  /** 表示継続時間 ms。既定 6000 */
-  durationMs: number;
-  /** partial(暫定) / final(確定)。partial は broadcast せずスキップする想定 */
-  isFinal: boolean;
-};
-
-/** 画面下に YouTube 風キャプションを表示するウィジェット。 */
-export type CaptionWidget = {
-  enabled: boolean;
-  /** 配置 % */
-  x: number;
-  y: number;
-  width: number;
-  /** JA / EN それぞれ表示するか(片方だけ使う運用にも対応) */
-  showJa: boolean;
-  showEn: boolean;
-  /** 各キャプション表示時間 ms */
-  durationMs: number;
-  /** 同時表示の最大行数。超えた古いものから消える */
-  maxVisibleLines: number;
-  /** フォントサイズ倍率 */
-  fontScale: number;
-  /** JA テキスト色 */
-  jaColor: string;
-  /** EN テキスト色 */
-  enColor: string;
-  /** 背景色 / 不透明度 */
-  bgColor: string;
-  bgOpacity: number;
-};
-
 export type AppPersistedState = {
   rooms: Room[];
   activeRoomId: string;
-  apiKey: string | null;
   obs: ObsConfig;
-  localVocal: LocalVocalConfig;
 };
 
 export const isSetsLine = (line: Line): line is SetsLine =>

@@ -1,6 +1,5 @@
 import type {
   BilingualStyle,
-  CaptionWidget,
   LottieAnimation,
   MatchLogWidget,
   MatchTimer,
@@ -12,14 +11,12 @@ import type {
 } from "./types";
 import {
   defaultBilingualStyle,
-  defaultCaption,
   defaultLottie,
   defaultMatchLog,
   defaultMatchTimer,
   defaultPerkCover,
   defaultSessionTimer,
   normalizeBilingualStyle,
-  normalizeCaption,
   normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
@@ -127,10 +124,6 @@ export const compressSettings = (
     const c = stripObject(s.lottie, defaultLottie());
     if (Object.keys(c).length > 0) out.lottie = c as LottieAnimation;
   }
-  if (s.caption) {
-    const c = stripObject(s.caption, defaultCaption());
-    if (Object.keys(c).length > 0) out.caption = c as CaptionWidget;
-  }
   return out;
 };
 
@@ -159,9 +152,6 @@ export const decompressSettings = (
       : undefined,
     lottie: s.lottie
       ? normalizeLottie(s.lottie as Partial<LottieAnimation>)
-      : undefined,
-    caption: s.caption
-      ? normalizeCaption(s.caption as Partial<CaptionWidget>)
       : undefined,
   };
 };

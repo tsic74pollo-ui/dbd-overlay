@@ -23,7 +23,7 @@ import {
 import { LAYOUTS, LAYOUT_IDS } from "@/components/overlay/layoutRegistry";
 import type { LayoutId } from "@/lib/types";
 
-export function RoomBar({ onOpenApiKey }: { onOpenApiKey: () => void }) {
+export function RoomBar() {
   const rooms = useAppStore((s) => s.rooms);
   const activeRoomId = useAppStore((s) => s.activeRoomId);
   const setActive = useAppStore((s) => s.setActiveRoom);
@@ -33,7 +33,6 @@ export function RoomBar({ onOpenApiKey }: { onOpenApiKey: () => void }) {
   const rename = useAppStore((s) => s.renameRoom);
   const setRooms = useAppStore((s) => s.setRooms);
   const update = useAppStore((s) => s.updateActiveRoomSettings);
-  const apiKey = useAppStore((s) => s.apiKey);
   const status = useConnectionStore((s) => s.status);
 
   const active = useAppStore(selectActiveRoom);
@@ -275,12 +274,6 @@ export function RoomBar({ onOpenApiKey }: { onOpenApiKey: () => void }) {
             <span className={`inline-block w-2 h-2 rounded-full ${statusDot}`} />
             <span className="text-xs text-gray-300">{statusText}</span>
           </div>
-          <button
-            onClick={onOpenApiKey}
-            className="text-xs text-gray-300 hover:text-white underline-offset-2 hover:underline"
-          >
-            Claude API: {apiKey ? "設定済" : "未設定"}
-          </button>
         </div>
       </div>
 

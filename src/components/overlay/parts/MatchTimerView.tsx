@@ -36,74 +36,6 @@ export function MatchTimerView({
   const dragAttrs = editable && onMove ? dragProps : {};
   const dragClass = cn(editable && onMove && "edit-draggable");
 
-  if (style === "bracket") {
-    // esports 競技風: 角括弧フレーム + 上ラベル、背景透過
-    return (
-      <div
-        className={dragClass}
-        style={{
-          ...wrapperStyle,
-          display: "inline-flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          fontWeight: 900,
-          lineHeight: 1,
-          textShadow: "2px 2px 6px rgba(0,0,0,0.95), 0 0 12px rgba(0,0,0,0.7)",
-        }}
-        {...dragAttrs}
-      >
-        {mt.label && (
-          <span
-            style={{
-              fontSize: `${mt.fontScale * 11}px`,
-              fontWeight: 700,
-              letterSpacing: "0.3em",
-              opacity: 0.85,
-              color: mt.color,
-              marginBottom: 4,
-              paddingLeft: 8,
-            }}
-          >
-            {mt.label}
-          </span>
-        )}
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: `${mt.fontScale * 8}px`,
-            fontSize: `${mt.fontScale * 32}px`,
-            fontFamily: "'Roboto Mono', 'Courier New', monospace",
-            letterSpacing: "0.04em",
-            color: mt.color,
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 400,
-              opacity: 0.6,
-              fontSize: "0.95em",
-              transform: "translateY(-1px)",
-            }}
-          >
-            [
-          </span>
-          <span style={{ fontWeight: 900 }}>{timeStr}</span>
-          <span
-            style={{
-              fontWeight: 400,
-              opacity: 0.6,
-              fontSize: "0.95em",
-              transform: "translateY(-1px)",
-            }}
-          >
-            ]
-          </span>
-        </div>
-      </div>
-    );
-  }
-
   if (style === "pill") {
     // 角丸ピル + グラデ背景、横並び(ラベル: 時刻)
     return (
@@ -147,63 +79,6 @@ export function MatchTimerView({
             letterSpacing: "0.04em",
             lineHeight: 1,
             fontFamily: "'Roboto Mono', 'Courier New', monospace",
-          }}
-        >
-          {timeStr}
-        </span>
-      </div>
-    );
-  }
-
-  if (style === "neon") {
-    // 透明背景 + アウトライン文字 + ネオン点滅、DBD ホラー寄り
-    const fontPx = mt.fontScale * 32;
-    return (
-      <div
-        className={cn(dragClass, "match-timer-neon", mt.running && "running")}
-        style={{
-          ...wrapperStyle,
-          display: "inline-flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          gap: 4,
-          // CSS で参照する mt.color
-          ["--mt-neon-color" as string]: mt.color,
-        }}
-        {...dragAttrs}
-      >
-        {mt.label && (
-          <span
-            style={{
-              fontSize: `${mt.fontScale * 11}px`,
-              fontWeight: 700,
-              letterSpacing: "0.4em",
-              opacity: 0.9,
-              color: mt.color,
-              textTransform: "uppercase",
-              textShadow: `0 0 6px ${mt.color}, 0 0 12px ${mt.color}80`,
-              paddingLeft: 4,
-            }}
-          >
-            {mt.label}
-          </span>
-        )}
-        <span
-          style={{
-            fontSize: `${fontPx}px`,
-            fontFamily: "'Roboto Mono', 'Courier New', monospace",
-            fontWeight: 700,
-            letterSpacing: "0.05em",
-            color: "transparent",
-            WebkitTextStroke: `1.5px ${mt.color}`,
-            // ネオン管的な多層 glow
-            textShadow: `
-              0 0 4px ${mt.color},
-              0 0 10px ${mt.color},
-              0 0 22px ${mt.color}aa,
-              0 0 44px ${mt.color}66
-            `,
-            lineHeight: 1,
           }}
         >
           {timeStr}

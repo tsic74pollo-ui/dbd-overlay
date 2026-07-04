@@ -45,10 +45,8 @@ export function MatchTimerEditor({ value, onChange }: Props) {
               {(
                 [
                   { v: "classic", label: "Classic", hint: "従来の半透明角丸ボックス" },
-                  { v: "bracket", label: "Bracket", hint: "[ TIME ] 角括弧フレーム" },
                   { v: "digital", label: "Digital", hint: "LED スコアボード風(光る)" },
                   { v: "pill", label: "Pill", hint: "角丸ピル + グラデ・横並び" },
-                  { v: "neon", label: "Neon", hint: "ネオン管アウトライン + 点滅" },
                 ] as { v: MatchTimerStyle; label: string; hint: string }[]
               ).map((opt) => {
                 const active = (value.style ?? "classic") === opt.v;

@@ -3,8 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import type { OverlaySettings } from "@/lib/types";
 import { OverlayView } from "@/components/OverlayView";
 import { joinRoom } from "@/lib/realtimeSync";
-import { isSupabaseConfigured } from "@/lib/supabase";
-import { useCaptionReceiver } from "@/lib/useCaptionReceiver";
 
 export function OverlayPage() {
   const [params] = useSearchParams();
@@ -28,20 +26,12 @@ export function OverlayPage() {
       setFatal("URL に ?room=<roomId> がありません");
       return;
     }
-    if (!isSupabaseConfigured) {
-      setFatal("Supabase が未設定です");
-      return;
-    }
-
     const handle = joinRoom(roomId, "viewer", {
       onState: (s) => setSettings(s),
       onStatus: (s) => setStatus(s),
     });
     return () => handle?.unsubscribe();
   }, [roomId]);
-
-  // LocalVocal キャプション受信(caption:<roomId> チャネル)
-  const { incoming: captionIncoming } = useCaptionReceiver(roomId);
 
   // Fatal config issues — show error only when we have nothing else to show
   if (fatal && !settings) {
@@ -61,7 +51,7 @@ export function OverlayPage() {
   // even if the connection drops or errors out. This protects live streams.
   return (
     <>
-      <OverlayView settings={settings} captionIncoming={captionIncoming} />
+      <OverlayView settings={settings} />
       {debug && (
         <div
           style={{

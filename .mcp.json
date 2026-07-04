@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "code-review-graph": {
+      "command": "uvx",
+      "args": [
+        "code-review-graph",
+        "serve"
+      ],
+      "cwd": "C:\\Users\\sn66p\\OneDrive\\\u30c7\u30b9\u30af\u30c8\u30c3\u30d7\\Claude CORE\\dbd-overlay",
+      "type": "stdio"
+    }
+  }
+}

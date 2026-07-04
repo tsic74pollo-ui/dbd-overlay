@@ -3,8 +3,7 @@ import type { PerkCover } from "@/lib/types";
 import { elapsedMs, fmtDown } from "@/lib/timer";
 import { cn } from "@/lib/cn";
 import { useDraggablePercent } from "@/lib/useDraggablePercent";
-import { useAudioReactive } from "@/lib/useAudioReactive";
-import { FLOW, RAINBOW, STAGE_SELECTOR, hexToRgba, timerColor } from "./helpers";
+import { RAINBOW, STAGE_SELECTOR, hexToRgba, timerColor } from "./helpers";
 
 /** 4パークの並びに合わせたカバー（形状切替可）＋光る枠＋枠外のカウントダウン。
  *  全レイアウト共通(位置は perkCover.x/y で各自指定)。 */
@@ -25,12 +24,6 @@ export function PerkCoverView({
     onDrag: ({ x, y }) => onMove?.(x, y),
   });
 
-  // audio スタイルのときだけマイクを開く。それ以外は idle で何もしない。
-  const audioActive = pc.glow.enabled && pc.glow.style === "audio";
-  const { level: audioLevel } = useAudioReactive(
-    audioActive ? (pc.glow.audio ?? null) : null,
-    { enabled: audioActive, smoothingSec: pc.glow.speedSec },
-  );
   const remaining = pc.timer.durationSec - elapsedMs(pc.timer, now) / 1000;
   const started = pc.timer.running || pc.timer.accumulatedMs > 0;
   // タイマー完走 OR ホットキー/リモコンからの強制開放のどちらでもリビールを発火
@@ -46,30 +39,15 @@ export function PerkCoverView({
   const glowOn = g.enabled;
   const style = g.style;
   const isRainbow = glowOn && style === "rainbow";
-  const isFlow = glowOn && style === "flow";
   const isNeon = glowOn && style === "neon";
   const isSolid = glowOn && style === "solid";
-  const isAudio = glowOn && style === "audio";
   const isHeartbeat = glowOn && style === "heartbeat";
-  const isCrack = glowOn && style === "crack";
-  const isHexFlame = glowOn && style === "hexFlame";
-  const isBreathing = glowOn && style === "breathing";
-  const isChase = glowOn && style === "chase";
-  const isScratchmark = glowOn && style === "scratchmark";
-  const spin = isRainbow || isFlow || isScratchmark;
+  const spin = isRainbow;
 
   const glowColor = g.colorByTimer && pc.timer.enabled ? timerColor(ratio) : g.color;
   const coverBg = hexToRgba(pc.backgroundColor, pc.opacity);
 
-  const ringBackground = isRainbow
-    ? RAINBOW
-    : isFlow
-      ? FLOW
-      : isScratchmark || isHexFlame
-        ? "transparent"
-        : glowOn
-          ? "var(--glow)"
-          : coverBg;
+  const ringBackground = isRainbow ? RAINBOW : glowOn ? "var(--glow)" : coverBg;
 
   const shape = pc.shape ?? "diamond";
   const reveal = pc.reveal ?? "fade";
@@ -89,7 +67,6 @@ export function PerkCoverView({
     "--glowSpeed": `${g.speedSec}s`,
     "--ringW": glowOn ? "5px" : "0px",
     "--revealMs": `${revealMs}ms`,
-    "--audio-level": isAudio ? audioLevel : 0,
   } as CSSProperties;
 
   const urgentPulse = pc.timer.urgentPulse ?? true;
@@ -121,13 +98,7 @@ export function PerkCoverView({
             isNeon && "neon",
             spin && "spin",
             isSolid && "glow-static",
-            isAudio && "audio",
             isHeartbeat && "heartbeat",
-            isCrack && "crack",
-            isHexFlame && "hex-flame",
-            isBreathing && "breathing",
-            isChase && "chase",
-            isScratchmark && "scratchmark",
           )}
           style={{ background: ringBackground }}
         >

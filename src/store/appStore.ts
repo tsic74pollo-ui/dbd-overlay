@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   AppPersistedState,
-  LocalVocalConfig,
   MatchResult,
   ObsConfig,
   OverlaySettings,
@@ -11,7 +10,6 @@ import type {
 } from "@/lib/types";
 import { isSetsLine } from "@/lib/types";
 import {
-  defaultLocalVocal,
   defaultObsConfig,
   newRoom,
   normalizePerkCover,
@@ -33,11 +31,8 @@ type AppActions = {
   setRooms: (rooms: Room[], activeRoomId?: string) => void;
   /** ルーム本体の任意フィールドをパッチ更新(obsSceneName / resetMatchTimerOnActivate 等)。 */
   patchRoom: (id: string, patch: Partial<Room>) => void;
-  setApiKey: (key: string | null) => void;
   /** OBS WebSocket 設定 */
   setObsConfig: (patch: Partial<ObsConfig>) => void;
-  /** LocalVocal(OBS プラグイン)WebSocket 設定 */
-  setLocalVocalConfig: (patch: Partial<LocalVocalConfig>) => void;
   /** マッチ結果を 1 件記録 + matchTimer リセット + 現マッチクリア
    *
    * isPowered=true: kills/stages を尊重(0-4 / 0-12)
@@ -81,9 +76,7 @@ const buildInitialState = (): AppPersistedState => {
   return {
     rooms: [first],
     activeRoomId: first.id,
-    apiKey: null,
     obs: defaultObsConfig(),
-    localVocal: defaultLocalVocal(),
   };
 };
 
@@ -156,9 +149,6 @@ export const useAppStore = create<AppStore>()(
       setObsConfig: (patch) => {
         set({ obs: { ...get().obs, ...patch } });
       },
-      setLocalVocalConfig: (patch) => {
-        set({ localVocal: { ...get().localVocal, ...patch } });
-      },
       updateActiveRoomSettings: (updater) => {
         const id = get().activeRoomId;
         set({
@@ -186,8 +176,6 @@ export const useAppStore = create<AppStore>()(
               : rooms[0].id;
         set({ rooms, activeRoomId: wantedActive });
       },
-      setApiKey: (apiKey) => set({ apiKey }),
-
       // ---- Hotkey / Remote actions ----------------------------------------
       // 「停止中かつ経過 0」のときだけ start。それ以外(稼働中/経過あり)は reset。
       // 押す → 開始 → 押す → 0 に戻る、というシンプルな2状態サイクル。
@@ -447,18 +435,15 @@ export const useAppStore = create<AppStore>()(
       partialize: (s): AppPersistedState => ({
         rooms: s.rooms,
         activeRoomId: s.activeRoomId,
-        apiKey: s.apiKey,
         obs: s.obs,
-        localVocal: s.localVocal,
       }),
-      // 古い localStorage に obs / localVocal が無いケースに備えて merge を明示
+      // 古い localStorage に obs が無いケースに備えて merge を明示
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<AppPersistedState>;
         return {
           ...current,
           ...p,
           obs: { ...defaultObsConfig(), ...(p.obs ?? {}) },
-          localVocal: { ...defaultLocalVocal(), ...(p.localVocal ?? {}) },
         } as AppPersistedState & typeof current;
       },
     },

@@ -3,8 +3,6 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { OverlayView } from "@/components/OverlayView";
 import { RoomBar } from "@/components/RoomBar";
-import { ChatPanel } from "@/components/ChatPanel";
-import { ApiKeySetup } from "@/components/ApiKeySetup";
 import { useRoomsSync } from "@/lib/useRoomsSync";
 import { useAutoBackup } from "@/lib/useAutoBackup";
 import { Move } from "lucide-react";
@@ -19,16 +17,12 @@ import { HotkeyToast } from "@/components/HotkeyToast";
 import { useRemoteCommandHost } from "@/lib/useRemoteCommandHost";
 import { useEffectiveHotkeys } from "@/lib/useEffectiveHotkeys";
 import { ObsConnectionProvider } from "@/lib/obsConnectionContext";
-import { LocalVocalProvider, useLocalVocalContext } from "@/lib/localVocalContext";
-import { useCaptionPublisher } from "@/lib/useCaptionPublisher";
 import { useCallback } from "react";
 
 export function EditorPage() {
   return (
     <ObsConnectionProvider>
-      <LocalVocalProvider>
-        <EditorPageInner />
-      </LocalVocalProvider>
+      <EditorPageInner />
     </ObsConnectionProvider>
   );
 }
@@ -36,7 +30,6 @@ export function EditorPage() {
 function EditorPageInner() {
   const room = useAppStore(selectActiveRoom);
   const updateSettings = useAppStore((s) => s.updateActiveRoomSettings);
-  const [apiKeyOpen, setApiKeyOpen] = useState(false);
   const [previewBg, setPreviewBg] = useState<"checker" | "dbd" | "transparent">("checker");
   const [dragEnabled, setDragEnabled] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
@@ -70,11 +63,6 @@ function EditorPageInner() {
   // ルーム情報を自動でローカルにスナップショット保存（誤削除・データ消失対策）
   useAutoBackup();
 
-  // LocalVocal からの受信メッセージを全ルームの caption channel へ broadcast
-  useCaptionPublisher();
-  // エディタプレビュー用に最新キャプションを取得(LocalVocal context から)
-  const { incoming: editorCaption } = useLocalVocalContext();
-
   if (!room) return null;
 
   const previewClass =
@@ -86,7 +74,7 @@ function EditorPageInner() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-white">
-      <RoomBar onOpenApiKey={() => setApiKeyOpen(true)} />
+      <RoomBar />
 
       <div className="flex-1 grid grid-cols-[420px_1fr] overflow-hidden">
         <div className="border-r border-gray-800 overflow-hidden">
@@ -130,7 +118,6 @@ function EditorPageInner() {
               <OverlayView
                 settings={room.settings}
                 editable={dragEnabled}
-                captionIncoming={editorCaption}
                 onMovePerkCover={(x, y) =>
                   updateSettings((s) => ({
                     ...s,
@@ -160,10 +147,6 @@ function EditorPageInner() {
           </div>
         </div>
       </div>
-
-      <ChatPanel onOpenApiKey={() => setApiKeyOpen(true)} />
-
-      <ApiKeySetup open={apiKeyOpen} onOpenChange={setApiKeyOpen} />
 
       <HotkeyToast message={toast} />
     </div>

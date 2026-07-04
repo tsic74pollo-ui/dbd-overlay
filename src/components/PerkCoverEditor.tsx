@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/Label";
 import { Switch } from "@/components/ui/Switch";
 import { RangeField, ColorField, ToggleRow } from "@/components/ui/Field";
 import { PerkCoverTemplateExport } from "@/components/PerkCoverTemplateExport";
-import { AudioReactiveSection } from "@/components/AudioReactiveSection";
 
 type Props = {
   value: PerkCover;
@@ -33,30 +32,18 @@ const FITS: { value: PerkCoverFit; label: string }[] = [
 const SHAPES: { value: PerkCoverShape; label: string }[] = [
   { value: "diamond", label: "ひし形（既定）" },
   { value: "roundedSquare", label: "角丸四角" },
-  { value: "circle", label: "円" },
-  { value: "hexagon", label: "六角形" },
 ];
 
 const REVEALS: { value: PerkCoverReveal; label: string }[] = [
   { value: "fade", label: "フェード" },
-  { value: "iris", label: "アイリス（縮んで消える）" },
   { value: "slideDown", label: "下に滑り落ちる" },
-  { value: "dissolve", label: "ぼかして消える" },
-  { value: "flash", label: "フラッシュ（拡大＋発光）" },
 ];
 
 const GLOW_STYLES: { value: PerkCoverGlowStyle; label: string; hint: string }[] = [
   { value: "solid", label: "単色", hint: "静かに光るだけ" },
   { value: "neon", label: "ネオン明滅", hint: "リズム良く点滅" },
   { value: "rainbow", label: "流れる虹色", hint: "7色 conic 回転" },
-  { value: "flow", label: "流れる指定色", hint: "白ハイライトが指定色を流す" },
-  { value: "audio", label: "オーディオ反応", hint: "声/BGMで脈動(マイク必要)" },
   { value: "heartbeat", label: "心音(Terror Radius)", hint: "二拍子の鼓動。発見/接近の緊張感" },
-  { value: "crack", label: "亀裂", hint: "突発的に強く光る稲妻演出" },
-  { value: "hexFlame", label: "呪火", hint: "オレンジ/赤の揺らぎ。color 設定は無視" },
-  { value: "breathing", label: "呼吸", hint: "緩やかな明滅。BGM 替わりの背景演出" },
-  { value: "chase", label: "チェイス", hint: "速く強いパルス。盛り上げ時用" },
-  { value: "scratchmark", label: "スクラッチマーク", hint: "破線が回転する DBD っぽい質感" },
 ];
 
 const COUNTDOWN_POSITIONS: { value: CountdownPos; label: string }[] = [
@@ -336,35 +323,20 @@ export function PerkCoverEditor({ value, onChange }: Props) {
                   onChange={(v) => setGlow({ colorByTimer: v })}
                 />
                 <ColorField
-                  label={
-                    value.glow.style === "audio" ? "反応時の色" : "グロー色"
-                  }
+                  label="グロー色"
                   value={value.glow.color}
                   onChange={(v) => setGlow({ color: v })}
                 />
 
-                {/* 速度パラメータ: スタイルでラベルと意味を切替 */}
                 {value.glow.style !== "solid" && (
                   <RangeField
-                    label={
-                      value.glow.style === "audio"
-                        ? "なめらかさ(秒)"
-                        : "速さ(秒)"
-                    }
+                    label="速さ(秒)"
                     value={value.glow.speedSec}
-                    min={value.glow.style === "audio" ? 0.05 : 0.6}
-                    max={value.glow.style === "audio" ? 1.5 : 8}
-                    step={value.glow.style === "audio" ? 0.01 : 0.1}
+                    min={0.6}
+                    max={8}
+                    step={0.1}
                     onChange={(v) => setGlow({ speedSec: v })}
                     format={(v) => v.toFixed(2)}
-                  />
-                )}
-
-                {/* audio スタイル時のみ AudioMeter を出す(M2で実装) */}
-                {value.glow.style === "audio" && (
-                  <AudioReactiveSection
-                    value={value.glow}
-                    onChange={(patch) => setGlow(patch)}
                   />
                 )}
               </>

@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { useAppStore } from "@/store/appStore";
 import { joinCommandChannel, type CommandHandle } from "@/lib/realtimeCommand";
 import { ACTION_BY_ID } from "@/lib/hotkeyActions";
-import { isSupabaseConfigured } from "@/lib/supabase";
 
 /**
  * エディタ側のコマンドホスト。全ルーム分のコマンドチャンネルを購読し、
@@ -19,7 +18,6 @@ export function useRemoteCommandHost(
   const handles = useRef<Map<string, CommandHandle>>(new Map());
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return;
     const ids = useAppStore.getState().rooms.map((r) => r.id);
 
     // 追加されたルームに接続

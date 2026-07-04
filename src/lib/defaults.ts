@@ -1,16 +1,17 @@
 import type {
   BilingualStyle,
-  CaptionWidget,
   Line,
-  LocalVocalConfig,
   LottieAnimation,
   MatchLogWidget,
   MatchTimer,
+  MatchTimerStyle,
   ObsConfig,
   OverlaySettings,
   PerkCover,
   PerkCoverGlow,
   PerkCoverGlowStyle,
+  PerkCoverReveal,
+  PerkCoverShape,
   Room,
   SessionTimer,
 } from "./types";
@@ -138,11 +139,6 @@ export const defaultPerkCover = (): PerkCover => {
     colorByTimer: true,
     color: "#00BFFF",
     speedSec: 3,
-    audio: {
-      threshold: 0.08,
-      gain: 1.5,
-      band: "all",
-    },
   },
   timer: {
     enabled: true,
@@ -199,20 +195,31 @@ export const defaultSessionTimer = (): SessionTimer => {
 
 // 既存の保存データ/同期データに新フィールドが無くてもデフォルトで埋める（後方互換）。
 /**
- * 旧 boolean(neonPulse/rainbow/flow) から新 style を推論する。
- * 優先順位: rainbow > flow > neonPulse > "solid"。
- * style が既に入っていればそれをそのまま尊重する。
+ * 旧 boolean(neonPulse/rainbow/flow) や廃止スタイルから、厳選4種の style へ寄せる。
+ * 廃止(flow→rainbow / audio・crack・hexFlame・breathing・chase・scratchmark→neon)。
  */
 const inferGlowStyle = (
   g: Partial<PerkCoverGlow> | undefined,
 ): PerkCoverGlowStyle => {
-  if (!g) return "neon";
-  if (g.style) return g.style;
-  if (g.rainbow) return "rainbow";
-  if (g.flow) return "flow";
-  if (g.neonPulse) return "neon";
+  const raw = g?.style as string | undefined;
+  if (raw) {
+    if (raw === "solid" || raw === "neon" || raw === "rainbow" || raw === "heartbeat") return raw;
+    if (raw === "flow") return "rainbow";
+    return "neon";
+  }
+  if (g?.rainbow) return "rainbow";
+  if (g?.flow) return "rainbow";
+  if (g?.neonPulse) return "neon";
   return "solid";
 };
+
+// 廃止した形/開放/タイマースタイルを厳選値へ寄せる（旧保存データ互換）。
+const coerceShape = (s: unknown): PerkCoverShape =>
+  s === "roundedSquare" ? "roundedSquare" : "diamond";
+const coerceReveal = (r: unknown): PerkCoverReveal =>
+  r === "slideDown" ? "slideDown" : "fade";
+const coerceMatchTimerStyle = (s: unknown): MatchTimerStyle =>
+  s === "digital" || s === "pill" ? s : "classic";
 
 export const normalizePerkCover = (pc?: Partial<PerkCover>): PerkCover => {
   const d = defaultPerkCover();
@@ -222,16 +229,18 @@ export const normalizePerkCover = (pc?: Partial<PerkCover>): PerkCover => {
     ...d.glow,
     ...inGlow,
     style: inferGlowStyle(inGlow),
-    audio: { ...d.glow.audio!, ...(inGlow?.audio ?? {}) },
   };
-  // legacy boolean は読み取り後は削ぎ落とす(再書き出し時に冗長にしない)
+  // legacy boolean / 廃止フィールドは読み取り後に削ぎ落とす(再書き出し時に冗長にしない)
   delete (mergedGlow as Partial<PerkCoverGlow>).neonPulse;
   delete (mergedGlow as Partial<PerkCoverGlow>).rainbow;
   delete (mergedGlow as Partial<PerkCoverGlow>).flow;
+  delete (mergedGlow as { audio?: unknown }).audio;
   return {
     ...d,
     ...pc,
     glow: mergedGlow,
+    shape: coerceShape(pc.shape),
+    reveal: coerceReveal(pc.reveal),
     timer: { ...d.timer, ...pc.timer },
     forceReleased: pc.forceReleased ?? false,
     mirror: pc.mirror ?? false,
@@ -241,6 +250,7 @@ export const normalizePerkCover = (pc?: Partial<PerkCover>): PerkCover => {
 export const normalizeMatchTimer = (mt?: Partial<MatchTimer>): MatchTimer => ({
   ...defaultMatchTimer(),
   ...mt,
+  style: coerceMatchTimerStyle(mt?.style),
 });
 
 export const normalizeSessionTimer = (st?: Partial<SessionTimer>): SessionTimer => ({
@@ -339,35 +349,6 @@ export const normalizeLottie = (l?: Partial<LottieAnimation>): LottieAnimation =
   ...l,
 });
 
-// LocalVocal(OBS プラグイン)からの音声→翻訳 WebSocket 接続設定の既定値。
-export const defaultLocalVocal = (): LocalVocalConfig => ({
-  enabled: false,
-  url: "ws://127.0.0.1:9999",
-});
-
-// 画面下キャプション(LocalVocal 受信字幕)ウィジェットの既定値。
-// 既定は disabled、配置は画面下 (x:10, y:78, width:80%)、durationMs 6 秒、最大 2 行。
-export const defaultCaption = (): CaptionWidget => ({
-  enabled: false,
-  x: 10,
-  y: 78,
-  width: 80,
-  showJa: true,
-  showEn: true,
-  durationMs: 6000,
-  maxVisibleLines: 2,
-  fontScale: 1,
-  jaColor: "#FFFFFF",
-  enColor: "#FFE082",
-  bgColor: "#000000",
-  bgOpacity: 0.55,
-});
-
-export const normalizeCaption = (c?: Partial<CaptionWidget>): CaptionWidget => ({
-  ...defaultCaption(),
-  ...c,
-});
-
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [
   { key: "1080p-80", label: "1080p / HUD 80%", rect: { x: 88.5, y: 79, width: 10.5, height: 19 } },
@@ -383,7 +364,6 @@ export const defaultSettings = (): OverlaySettings => ({
   bilingualStyle: defaultBilingualStyle(),
   matchLog: defaultMatchLog(),
   layoutId: "classic",
-  caption: defaultCaption(),
 });
 
 export const newRoom = (name = "新しいルーム"): Room => ({

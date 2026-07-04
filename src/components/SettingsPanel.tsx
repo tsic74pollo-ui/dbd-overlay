@@ -1,8 +1,10 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "@/lib/cn";
 import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
   normalizeBilingualStyle,
-  normalizeCaption,
   normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
@@ -12,7 +14,6 @@ import {
 import type {
   Align,
   BilingualStyle,
-  CaptionWidget,
   Line,
   LottieAnimation,
   MatchLogWidget,
@@ -38,12 +39,11 @@ import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
 import { HotkeySettings } from "@/components/HotkeySettings";
-import { LocalVocalPanel } from "@/components/LocalVocalPanel";
-import { CaptionEditor } from "@/components/CaptionEditor";
 
 export function SettingsPanel() {
   const room = useAppStore(selectActiveRoom);
   const update = useAppStore((s) => s.updateActiveRoomSettings);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   if (!room) return null;
 
@@ -81,10 +81,6 @@ export function SettingsPanel() {
     update((s) => ({ ...s, lottie: next }));
   };
 
-  const setCaption = (next: CaptionWidget) => {
-    update((s) => ({ ...s, caption: next }));
-  };
-
   const patchLine = (idx: number, patch: Partial<Line>) => {
     update((s) => ({
       ...s,
@@ -96,19 +92,8 @@ export function SettingsPanel() {
     <div className="space-y-6 p-6 bg-gray-900 rounded-lg max-h-[calc(100vh-120px)] overflow-y-auto">
       <h2 className="text-xl font-bold text-white">オーバーレイ設定</h2>
 
+      {/* ===== コア（ほとんどの人が使う基本機能） ===== */}
       <AlignSelector value={settings.align ?? "left"} onChange={setAlign} />
-
-      <RemoteUrlPanel />
-
-      <HotkeySettings />
-
-      <ObsConnectionPanel />
-
-      <LocalVocalPanel />
-
-      <CaptionEditor value={normalizeCaption(settings.caption)} onChange={setCaption} />
-
-      <RoomActivationEditor />
 
       <MatchControls />
 
@@ -119,10 +104,6 @@ export function SettingsPanel() {
       <SessionTimerEditor value={normalizeSessionTimer(settings.sessionTimer)} onChange={setSessionTimer} />
 
       <MatchLogEditor value={normalizeMatchLog(settings.matchLog)} onChange={setMatchLog} />
-
-      <BilingualStyleEditor value={normalizeBilingualStyle(settings.bilingualStyle)} onChange={setBilingualStyle} />
-
-      <LottieEditor value={normalizeLottie(settings.lottie)} onChange={setLottie} />
 
       <IconPicker iconImage={settings.iconImage} onChange={setIcon} />
 
@@ -143,6 +124,39 @@ export function SettingsPanel() {
               onChange={(p) => patchLine(idx, p)}
             />
           ),
+        )}
+      </div>
+
+      {/* ===== 詳細設定（上級者向け・既定は折りたたみ） ===== */}
+      <div className="border-t border-gray-800 pt-4">
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="text-sm font-semibold text-gray-300">詳細設定（上級者向け）</span>
+          <ChevronDown
+            className={cn(
+              "w-4 h-4 text-gray-400 transition-transform",
+              advancedOpen && "rotate-180",
+            )}
+          />
+        </button>
+        <p className="mt-1 text-xs text-gray-500">
+          OBS連携・リモコン・ホットキー・Lottie演出・バイリンガル。使う人だけ開いてください。
+        </p>
+        {advancedOpen && (
+          <div className="mt-4 space-y-6">
+            <ObsConnectionPanel />
+            <RoomActivationEditor />
+            <RemoteUrlPanel />
+            <HotkeySettings />
+            <BilingualStyleEditor
+              value={normalizeBilingualStyle(settings.bilingualStyle)}
+              onChange={setBilingualStyle}
+            />
+            <LottieEditor value={normalizeLottie(settings.lottie)} onChange={setLottie} />
+          </div>
         )}
       </div>
     </div>
