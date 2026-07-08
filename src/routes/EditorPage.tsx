@@ -17,6 +17,7 @@ import { HotkeyToast } from "@/components/HotkeyToast";
 import { useRemoteCommandHost } from "@/lib/useRemoteCommandHost";
 import { useEffectiveHotkeys } from "@/lib/useEffectiveHotkeys";
 import { ObsConnectionProvider } from "@/lib/obsConnectionContext";
+import { OnboardingWizard, ONBOARDED_KEY } from "@/components/OnboardingWizard";
 import { useCallback } from "react";
 
 export function EditorPage() {
@@ -33,6 +34,23 @@ function EditorPageInner() {
   const [previewBg, setPreviewBg] = useState<"checker" | "dbd" | "transparent">("checker");
   const [dragEnabled, setDragEnabled] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+
+  // 初回起動時だけセットアップガイドを自動表示（閉じたら二度と自動では出ない）
+  const [guideOpen, setGuideOpen] = useState<boolean>(() => {
+    try {
+      return !window.localStorage.getItem(ONBOARDED_KEY);
+    } catch {
+      return false;
+    }
+  });
+  const closeGuide = useCallback(() => {
+    try {
+      window.localStorage.setItem(ONBOARDED_KEY, "1");
+    } catch {
+      /* storage full/disabled — ガイドは今セッションだけ閉じる */
+    }
+    setGuideOpen(false);
+  }, []);
 
   // ---- Hotkeys (T = timer, B = box/cover, N = next room) -------------------
   // HOTKEY_ACTIONS が単一情報源。リモコン/Claude AI からも同じ id で発火できる。
@@ -74,7 +92,7 @@ function EditorPageInner() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 text-white">
-      <RoomBar />
+      <RoomBar onOpenGuide={() => setGuideOpen(true)} />
 
       <div className="flex-1 grid grid-cols-[420px_1fr] overflow-hidden">
         <div className="border-r border-gray-800 overflow-hidden">
@@ -149,6 +167,8 @@ function EditorPageInner() {
       </div>
 
       <HotkeyToast message={toast} />
+
+      <OnboardingWizard open={guideOpen} onClose={closeGuide} />
     </div>
   );
 }

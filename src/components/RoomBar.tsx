@@ -9,6 +9,7 @@ import {
   Download,
   Upload,
   History,
+  HelpCircle,
 } from "lucide-react";
 import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import { useConnectionStore } from "@/store/connectionStore";
@@ -23,7 +24,7 @@ import {
 import { LAYOUTS, LAYOUT_IDS } from "@/components/overlay/layoutRegistry";
 import type { LayoutId } from "@/lib/types";
 
-export function RoomBar() {
+export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
   const rooms = useAppStore((s) => s.rooms);
   const activeRoomId = useAppStore((s) => s.activeRoomId);
   const setActive = useAppStore((s) => s.setActiveRoom);
@@ -274,6 +275,17 @@ export function RoomBar() {
             <span className={`inline-block w-2 h-2 rounded-full ${statusDot}`} />
             <span className="text-xs text-gray-300">{statusText}</span>
           </div>
+          {onOpenGuide && (
+            <button
+              type="button"
+              onClick={onOpenGuide}
+              className="flex items-center gap-1 text-xs text-gray-300 hover:text-white underline-offset-2 hover:underline"
+              title="セットアップガイドを開く"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              使い方
+            </button>
+          )}
         </div>
       </div>
 
