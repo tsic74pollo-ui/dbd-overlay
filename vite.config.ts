@@ -50,6 +50,11 @@ export default defineConfig(({ mode }) => {
       // Vite 起動時のログに `Network: http://192.168.x.x:5173/` が出る。
       // → /remote ページもその IP 経由で開けばリモコンが動作する。
       host: true,
+      // 固定ポート。他プロジェクト(overlay-fx=5180)と衝突しないよう明示。
+      // strictPort: true で、もし塞がっていたら黙って5174等にずれず即エラーにする
+      // — README/OnboardingWizard が案内する http://localhost:5173/ を常に正しく保つ。
+      port: 5173,
+      strictPort: true,
     },
   };
 });
