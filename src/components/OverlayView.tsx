@@ -1,28 +1,32 @@
 import { useEffect, useRef, useState } from "react";
+import { Move } from "lucide-react";
 import type { OverlaySettings, SetsLine } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { MatchLogView } from "@/components/MatchLogView";
-import { LottiePlayer } from "@/components/LottiePlayer";
 import { PerkCoverView } from "@/components/overlay/parts/PerkCoverView";
 import { MatchTimerView } from "@/components/overlay/parts/MatchTimerView";
 import { SessionTimerView } from "@/components/overlay/parts/SessionTimerView";
 import { LAYOUTS } from "@/components/overlay/layoutRegistry";
+import { useDraggablePercent } from "@/lib/useDraggablePercent";
+import { STAGE_SELECTOR } from "@/components/overlay/parts/helpers";
 
 type Props = {
   settings: OverlaySettings;
-  /** When true, PerkCover / MatchTimer / SessionTimer / MatchLog become draggable for in-place positioning. */
+  /** When true, PerkCover / MatchTimer / SessionTimer / MatchLog / info panel become draggable for in-place positioning. */
   editable?: boolean;
   onMovePerkCover?: (x: number, y: number) => void;
   onMoveMatchTimer?: (x: number, y: number) => void;
   onMoveSessionTimer?: (x: number, y: number) => void;
   onMoveMatchLog?: (x: number, y: number) => void;
+  /** 試合情報パネル(1段目〜SET一覧)全体の移動。グループとして一括で動く */
+  onMoveInfo?: (x: number, y: number) => void;
 };
 
 /**
  * OverlayView は dispatcher 役。
- *   - 共通の state (now / lottie シグナル / setIndex 等) はここで管理
+ *   - 共通の state (now / setIndex 等) はここで管理
  *   - layoutId に応じてレイアウトコンポーネントを差し替え
- *   - PerkCover / MatchTimer / SessionTimer / MatchLog / Lottie は全レイアウト共通(ここで描画)
+ *   - PerkCover / MatchTimer / SessionTimer / MatchLog は全レイアウト共通(ここで描画)
  *
  * レイアウト本体(タイトル/SET 表示)は `src/components/overlay/OverlayLayout*.tsx` 群が担当。
  */
@@ -33,16 +37,20 @@ export function OverlayView({
   onMoveMatchTimer,
   onMoveSessionTimer,
   onMoveMatchLog,
+  onMoveInfo,
 }: Props) {
   const { perkCover, matchTimer, sessionTimer, lines } = settings;
-  const lottie = settings.lottie;
   const [autoSetIndex, setAutoSetIndex] = useState(0);
   const [setFading, setSetFading] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  // Lottie 再生シグナル
-  const [lottiePlaySignal, setLottiePlaySignal] = useState(0);
-  const prevMatchRunningRef = useRef<boolean>(!!matchTimer?.running);
+  // 試合情報パネル(1段目〜SET)のグループ位置。{0,0} = レイアウト本来の位置
+  const infoPos = settings.infoPos ?? { x: 0, y: 0 };
+  const infoDragProps = useDraggablePercent({
+    current: infoPos,
+    stageSelector: STAGE_SELECTOR,
+    onDrag: ({ x, y }) => onMoveInfo?.(x, y),
+  });
 
   // タイマー稼働中のみ 250ms ごとに now を更新
   const timersRunning =
@@ -53,23 +61,6 @@ export function OverlayView({
     const id = window.setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(id);
   }, [timersRunning]);
-
-  // Lottie トリガー: room-activate(マウント時に1回発火)
-  useEffect(() => {
-    if (!lottie?.enabled || lottie.trigger !== "room-activate") return;
-    setLottiePlaySignal((s) => s + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Lottie トリガー: match-start(matchTimer.running が false→true 遷移)
-  useEffect(() => {
-    if (!lottie?.enabled || lottie.trigger !== "match-start") return;
-    const cur = !!matchTimer?.running;
-    if (!prevMatchRunningRef.current && cur) {
-      setLottiePlaySignal((s) => s + 1);
-    }
-    prevMatchRunningRef.current = cur;
-  }, [matchTimer?.running, lottie?.enabled, lottie?.trigger]);
 
   // SET 状態の解決
   const setsLine = (lines[5] as SetsLine | undefined) ?? null;
@@ -82,7 +73,6 @@ export function OverlayView({
   );
   const setIndex = cycleMode === "manual" ? manualSetIndex : autoSetIndex;
   const prevManualSetIndexRef = useRef(manualSetIndex);
-  const prevSetIndexRef = useRef(setIndex);
 
   // manual モード時の SET 切替フェード
   useEffect(() => {
@@ -93,15 +83,6 @@ export function OverlayView({
     const t = window.setTimeout(() => setSetFading(false), 380);
     return () => clearTimeout(t);
   }, [cycleMode, manualSetIndex]);
-
-  // Lottie トリガー: set-change(setIndex の変化を検知)
-  useEffect(() => {
-    if (!lottie?.enabled || lottie.trigger !== "set-change") return;
-    if (prevSetIndexRef.current !== setIndex) {
-      setLottiePlaySignal((s) => s + 1);
-    }
-    prevSetIndexRef.current = setIndex;
-  }, [setIndex, lottie?.enabled, lottie?.trigger]);
 
   // auto モード時の SET 自動切替
   useEffect(() => {
@@ -138,14 +119,40 @@ export function OverlayView({
       className={cn("relative w-full h-full", "overlay-stage")}
       style={{ fontFamily: "Arial, sans-serif" }}
     >
-      {/* テンプレート別のテキスト/SET 表示 */}
-      <Layout
-        settings={settings}
-        setIndex={setIndex}
-        setFading={setFading}
-        setsLine={setsLine}
-        setsVisible={setsVisible}
-      />
+      {/* テンプレート別のテキスト/SET 表示 — infoPos %ぶんグループごと平行移動。
+          ラッパーはステージ同寸なので translate の % がそのままステージ % に一致する。
+          pointer-events:none で他ウィジェットのドラッグ/クリックを一切妨げない。 */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          transform:
+            infoPos.x !== 0 || infoPos.y !== 0
+              ? `translate(${infoPos.x}%, ${infoPos.y}%)`
+              : undefined,
+        }}
+      >
+        <Layout
+          settings={settings}
+          setIndex={setIndex}
+          setFading={setFading}
+          setsLine={setsLine}
+          setsVisible={setsVisible}
+        />
+      </div>
+
+      {/* 編集モード: 試合情報パネルをまとめて掴むドラッグチップ(配信出力には出ない) */}
+      {editable && onMoveInfo && (
+        <div
+          className="edit-draggable absolute z-10 flex items-center gap-1 rounded bg-gray-900/85 border border-gray-500 px-2 py-1 text-[11px] text-gray-100 select-none"
+          style={{ left: `${infoPos.x}%`, top: `${infoPos.y}%`, cursor: "grab" }}
+          title="ドラッグで試合情報(1段目〜SET)をまとめて移動 / ダブルクリックで初期位置に戻す"
+          onDoubleClick={() => onMoveInfo(0, 0)}
+          {...infoDragProps}
+        >
+          <Move className="w-3 h-3" />
+          試合情報
+        </div>
+      )}
 
       {/* 共通: パーク隠しカバー */}
       {perkCover?.enabled && (
@@ -180,11 +187,6 @@ export function OverlayView({
       {/* 共通: マッチログ */}
       {settings.matchLog?.enabled && (
         <MatchLogView ml={settings.matchLog} editable={editable} onMove={onMoveMatchLog} />
-      )}
-
-      {/* 共通: Lottie アニメーション */}
-      {lottie?.enabled && (
-        <LottiePlayer animation={lottie} playSignal={lottiePlaySignal} />
       )}
     </div>
   );

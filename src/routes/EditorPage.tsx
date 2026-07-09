@@ -160,6 +160,9 @@ function EditorPageInner() {
                     matchLog: { ...normalizeMatchLog(s.matchLog), x, y },
                   }))
                 }
+                onMoveInfo={(x, y) =>
+                  updateSettings((s) => ({ ...s, infoPos: { x, y } }))
+                }
               />
             </div>
           </div>

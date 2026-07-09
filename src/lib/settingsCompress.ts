@@ -1,6 +1,5 @@
 import type {
   BilingualStyle,
-  LottieAnimation,
   MatchLogWidget,
   MatchTimer,
   OverlaySettings,
@@ -11,13 +10,11 @@ import type {
 } from "./types";
 import {
   defaultBilingualStyle,
-  defaultLottie,
   defaultMatchLog,
   defaultMatchTimer,
   defaultPerkCover,
   defaultSessionTimer,
   normalizeBilingualStyle,
-  normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
   normalizePerkCover,
@@ -119,10 +116,9 @@ export const compressSettings = (
     const c = stripObject(s.matchLog, defaultMatchLog());
     if (Object.keys(c).length > 0) out.matchLog = c as MatchLogWidget;
   }
-  if (s.lottie) {
-    // json は大きいが配列ではないので stripObject の通常パスで透過送信される
-    const c = stripObject(s.lottie, defaultLottie());
-    if (Object.keys(c).length > 0) out.lottie = c as LottieAnimation;
+  // 試合情報パネルの位置オフセット。既定 {0,0} のときは送らない
+  if (s.infoPos && (s.infoPos.x !== 0 || s.infoPos.y !== 0)) {
+    out.infoPos = s.infoPos;
   }
   return out;
 };
@@ -150,9 +146,8 @@ export const decompressSettings = (
     matchLog: s.matchLog
       ? normalizeMatchLog(s.matchLog as Partial<MatchLogWidget>)
       : undefined,
-    lottie: s.lottie
-      ? normalizeLottie(s.lottie as Partial<LottieAnimation>)
-      : undefined,
+    // 欠落 = 既定 {0,0}(レイアウト本来の位置)。描画側の ?? と揃える
+    infoPos: s.infoPos ?? { x: 0, y: 0 },
   };
 };
 

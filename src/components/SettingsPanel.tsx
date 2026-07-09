@@ -5,7 +5,6 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import {
   LINE_LABELS,
   normalizeBilingualStyle,
-  normalizeLottie,
   normalizeMatchLog,
   normalizeMatchTimer,
   normalizePerkCover,
@@ -15,7 +14,6 @@ import type {
   Align,
   BilingualStyle,
   Line,
-  LottieAnimation,
   MatchLogWidget,
   MatchTimer,
   PerkCover,
@@ -34,7 +32,6 @@ import { MatchTimerEditor } from "@/components/MatchTimerEditor";
 import { SessionTimerEditor } from "@/components/SessionTimerEditor";
 import { BilingualStyleEditor } from "@/components/BilingualStyleEditor";
 import { MatchLogEditor } from "@/components/MatchLogEditor";
-import { LottieEditor } from "@/components/LottieEditor";
 import { ObsConnectionPanel } from "@/components/ObsConnectionPanel";
 import { RoomActivationEditor } from "@/components/RoomActivationEditor";
 import { RemoteUrlPanel } from "@/components/RemoteUrlPanel";
@@ -75,10 +72,6 @@ export function SettingsPanel() {
 
   const setMatchLog = (next: MatchLogWidget) => {
     update((s) => ({ ...s, matchLog: next }));
-  };
-
-  const setLottie = (next: LottieAnimation) => {
-    update((s) => ({ ...s, lottie: next }));
   };
 
   const patchLine = (idx: number, patch: Partial<Line>) => {
@@ -143,7 +136,7 @@ export function SettingsPanel() {
           />
         </button>
         <p className="mt-1 text-xs text-gray-500">
-          OBS連携・リモコン・ホットキー・Lottie演出・バイリンガル。使う人だけ開いてください。
+          OBS連携・リモコン・ホットキー・バイリンガル。使う人だけ開いてください。
         </p>
         {advancedOpen && (
           <div className="mt-4 space-y-6">
@@ -155,7 +148,6 @@ export function SettingsPanel() {
               value={normalizeBilingualStyle(settings.bilingualStyle)}
               onChange={setBilingualStyle}
             />
-            <LottieEditor value={normalizeLottie(settings.lottie)} onChange={setLottie} />
           </div>
         )}
       </div>

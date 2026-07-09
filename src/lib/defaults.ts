@@ -1,7 +1,6 @@
 import type {
   BilingualStyle,
   Line,
-  LottieAnimation,
   MatchLogWidget,
   MatchTimer,
   MatchTimerStyle,
@@ -330,24 +329,6 @@ export const normalizeMatchLog = (m?: Partial<MatchLogWidget>): MatchLogWidget =
       : d.records,
   };
 };
-
-// Lottie アニメーション既定値。enabled: false で未設定状態。
-export const defaultLottie = (): LottieAnimation => ({
-  enabled: false,
-  json: "",
-  name: "",
-  trigger: "room-activate",
-  x: 35,
-  y: 30,
-  width: 30,
-  loop: false,
-  fadeOutMs: 600,
-});
-
-export const normalizeLottie = (l?: Partial<LottieAnimation>): LottieAnimation => ({
-  ...defaultLottie(),
-  ...l,
-});
 
 // 解像度 / HUDスケール プリセット（実測ベース。右下パーク2×2）。
 export const PERK_COVER_PRESETS: { key: string; label: string; rect: { x: number; y: number; width: number; height: number } }[] = [

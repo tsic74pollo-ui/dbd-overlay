@@ -20,7 +20,6 @@
     "ably": "^2.23.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lottie-react": "^2.4.1",
     "lucide-react": "^1.16.0",
     "obs-websocket-js": "^5.0.8",
     "qrcode.react": "^4.2.0",
