@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Copy, Upload, X } from "lucide-react";
 import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import { PERK_COVER_PRESETS, normalizePerkCover } from "@/lib/defaults";
+import { readImageFileScaled } from "@/lib/imageFile";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 
@@ -27,9 +28,12 @@ export function OnboardingWizard({ open, onClose }: Props) {
 
   const [step, setStep] = useState(0);
   const [mirror, setMirror] = useState(false);
-  const [presetKey, setPresetKey] = useState(PERK_COVER_PRESETS[0].key);
+  // 既定はゲーム側デフォルトの HUD 100%(配列順ではなく明示キーで選ぶ)
+  const [presetKey, setPresetKey] = useState("1080p-100");
   const [image, setImage] = useState<string | null>(null);
+  const [imgNote, setImgNote] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   if (!open || !room) return null;
 
@@ -64,20 +68,28 @@ export function OnboardingWizard({ open, onClose }: Props) {
     });
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") setImage(reader.result);
-    };
-    reader.readAsDataURL(file);
+    const r = await readImageFileScaled(file);
+    if (r.ok) {
+      setImage(r.dataUrl);
+      setImgNote(r.scaled ? "配信同期のため画像を自動縮小しました" : null);
+    } else {
+      setImgNote(r.error);
+    }
   };
 
   const copyUrl = async () => {
-    await navigator.clipboard.writeText(overlayUrl);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(overlayUrl);
+      setCopied(true);
+      setCopyFailed(false);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // http(LAN IP)等の insecure context では clipboard API が使えない
+      setCopyFailed(true);
+    }
   };
 
   const next = () => {
@@ -219,6 +231,7 @@ export function OnboardingWizard({ open, onClose }: Props) {
                 <Upload className="w-4 h-4" />
                 画像・ロゴをアップロード
               </label>
+              {imgNote && <p className="text-xs text-amber-300">{imgNote}</p>}
               {image && (
                 <div className="flex items-center gap-2">
                   <div className="flex-1 rounded border border-gray-700 bg-gray-950 p-2">
@@ -247,6 +260,11 @@ export function OnboardingWizard({ open, onClose }: Props) {
                   {copied ? "コピー済" : "コピー"}
                 </Button>
               </div>
+              {copyFailed && (
+                <p className="text-xs text-amber-300">
+                  この環境ではコピーできません。上のURLを選択して手動でコピーしてください。
+                </p>
+              )}
 
               <ol className="space-y-1.5 text-sm text-gray-300 list-decimal list-inside">
                 <li>OBS で「ソース追加」→「ブラウザ」</li>

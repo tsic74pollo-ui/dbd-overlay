@@ -160,9 +160,11 @@ function EditorPageInner() {
                     matchLog: { ...normalizeMatchLog(s.matchLog), x, y },
                   }))
                 }
-                onMoveInfo={(x, y) =>
-                  updateSettings((s) => ({ ...s, infoPos: { x, y } }))
-                }
+                onMoveInfo={(x, y) => {
+                  // オフセットなので負値OK。±100%(ステージ1枚ぶん)に制限
+                  const c = (v: number) => Math.max(-100, Math.min(100, v));
+                  updateSettings((s) => ({ ...s, infoPos: { x: c(x), y: c(y) } }));
+                }}
               />
             </div>
           </div>

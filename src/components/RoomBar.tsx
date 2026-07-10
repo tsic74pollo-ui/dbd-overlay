@@ -49,9 +49,14 @@ export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
   const overlayUrl = `${window.location.origin}/overlay?room=${active.id}`;
 
   const copyUrl = async () => {
-    await navigator.clipboard.writeText(overlayUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      await navigator.clipboard.writeText(overlayUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // http(LAN IP)等では clipboard API 不可 → 選択可能な形で提示して手動コピー
+      window.prompt("この環境では自動コピーできません。手動でコピーしてください:", overlayUrl);
+    }
   };
 
   const startRename = () => {

@@ -2,6 +2,7 @@ import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "node:path";
+import { mintAblyTokenRequest } from "./api/_ablyShared";
 
 // Vercel serves api/ably-token.ts as a serverless function in production.
 // `vite dev` doesn't run that, so this plugin mirrors it locally: same
@@ -19,7 +20,6 @@ function ablyTokenDevMiddleware(apiKey: string | undefined): Plugin {
           return;
         }
         try {
-          const { mintAblyTokenRequest } = await import("./api/_ablyShared");
           const tokenRequest = await mintAblyTokenRequest(apiKey);
           res.statusCode = 200;
           res.end(JSON.stringify(tokenRequest));

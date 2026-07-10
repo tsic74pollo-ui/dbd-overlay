@@ -5,7 +5,6 @@ import type {
   OverlaySettings,
   PerkCover,
   PerkCoverGlow,
-  PerkCoverTimer,
   SessionTimer,
 } from "./types";
 import {
@@ -146,10 +145,8 @@ export const decompressSettings = (
     matchLog: s.matchLog
       ? normalizeMatchLog(s.matchLog as Partial<MatchLogWidget>)
       : undefined,
-    // 欠落 = 既定 {0,0}(レイアウト本来の位置)。描画側の ?? と揃える
-    infoPos: s.infoPos ?? { x: 0, y: 0 },
+    // 欠落 = レイアウト本来の位置。既定の補完は描画側の ?? に一任(他フィールドと同じ原則)
+    infoPos: s.infoPos,
   };
 };
 
-// Tier1 で参照されない export を抑制(型を一意にしておく為のみ)
-export type { PerkCoverTimer };

@@ -11,6 +11,7 @@ import type {
   PerkCoverTimer,
 } from "@/lib/types";
 import { PERK_COVER_PRESETS, saveUserDefaultPerkCoverRect } from "@/lib/defaults";
+import { readImageFileScaled } from "@/lib/imageFile";
 import { startSw, stopSw, resetSw } from "@/lib/timer";
 import { Button } from "@/components/ui/Button";
 import { Label } from "@/components/ui/Label";
@@ -70,14 +71,17 @@ export function PerkCoverEditor({ value, onChange }: Props) {
     window.setTimeout(() => setSavedFlash(false), 1800);
   };
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [imgNote, setImgNote] = useState<string | null>(null);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") set({ image: reader.result });
-    };
-    reader.readAsDataURL(file);
+    const r = await readImageFileScaled(file);
+    if (r.ok) {
+      set({ image: r.dataUrl });
+      setImgNote(r.scaled ? "配信同期のため画像を自動縮小しました" : null);
+    } else {
+      setImgNote(r.error);
+    }
   };
 
   const min = Math.floor(value.timer.durationSec / 60);
@@ -162,6 +166,7 @@ export function PerkCoverEditor({ value, onChange }: Props) {
             <Upload className="w-4 h-4" />
             画像・ロゴをアップロード
           </label>
+          {imgNote && <p className="text-xs text-amber-300">{imgNote}</p>}
           {value.image && (
             <div className="flex items-center gap-2">
               <div className="flex-1 p-2 border border-gray-600 rounded">

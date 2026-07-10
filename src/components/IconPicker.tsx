@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Upload } from "lucide-react";
 import { PRESET_ICONS } from "@/lib/defaults";
+import { readImageFileScaled } from "@/lib/imageFile";
 import { Label } from "@/components/ui/Label";
 import { cn } from "@/lib/cn";
 
@@ -9,14 +11,17 @@ type Props = {
 };
 
 export function IconPicker({ iconImage, onChange }: Props) {
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [imgNote, setImgNote] = useState<string | null>(null);
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") onChange(reader.result);
-    };
-    reader.readAsDataURL(file);
+    const r = await readImageFileScaled(file);
+    if (r.ok) {
+      onChange(r.dataUrl);
+      setImgNote(r.scaled ? "配信同期のため画像を自動縮小しました" : null);
+    } else {
+      setImgNote(r.error);
+    }
   };
 
   return (
@@ -58,6 +63,7 @@ export function IconPicker({ iconImage, onChange }: Props) {
           <Upload className="w-4 h-4" />
           カスタム画像をアップロード
         </label>
+        {imgNote && <p className="mt-1 text-xs text-amber-300">{imgNote}</p>}
       </div>
       {iconImage && !PRESET_ICONS.includes(iconImage) && (
         <div className="p-2 border border-gray-600 rounded">

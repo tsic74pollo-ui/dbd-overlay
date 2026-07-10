@@ -44,12 +44,15 @@ export function OverlayView({
   const [setFading, setSetFading] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  // 試合情報パネル(1段目〜SET)のグループ位置。{0,0} = レイアウト本来の位置
+  // 試合情報パネル(1段目〜SET)のグループ位置。{0,0} = レイアウト本来の位置。
+  // 「自然位置からのオフセット」なので負値が正当(下寄せレイアウトを上に動かす等)。
+  // 共有フックの 0-100 クランプは使わず、範囲制限は onMoveInfo 側(EditorPage)が担う。
   const infoPos = settings.infoPos ?? { x: 0, y: 0 };
   const infoDragProps = useDraggablePercent({
     current: infoPos,
     stageSelector: STAGE_SELECTOR,
     onDrag: ({ x, y }) => onMoveInfo?.(x, y),
+    clamp: false,
   });
 
   // タイマー稼働中のみ 250ms ごとに now を更新
@@ -140,11 +143,16 @@ export function OverlayView({
         />
       </div>
 
-      {/* 編集モード: 試合情報パネルをまとめて掴むドラッグチップ(配信出力には出ない) */}
+      {/* 編集モード: 試合情報パネルをまとめて掴むドラッグチップ(配信出力には出ない)。
+          オフセットが負でもチップはステージ内に留めて掴めるようにする(基準値は実値)。 */}
       {editable && onMoveInfo && (
         <div
           className="edit-draggable absolute z-10 flex items-center gap-1 rounded bg-gray-900/85 border border-gray-500 px-2 py-1 text-[11px] text-gray-100 select-none"
-          style={{ left: `${infoPos.x}%`, top: `${infoPos.y}%`, cursor: "grab" }}
+          style={{
+            left: `${Math.max(0, Math.min(96, infoPos.x))}%`,
+            top: `${Math.max(0, Math.min(96, infoPos.y))}%`,
+            cursor: "grab",
+          }}
           title="ドラッグで試合情報(1段目〜SET)をまとめて移動 / ダブルクリックで初期位置に戻す"
           onDoubleClick={() => onMoveInfo(0, 0)}
           {...infoDragProps}
