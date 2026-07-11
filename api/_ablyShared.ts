@@ -28,5 +28,10 @@ export async function mintAblyTokenRequest(apiKey: string): Promise<TokenRequest
   const rest = new Ably.Rest({ key });
   return rest.auth.createTokenRequest({
     capability: { "dbd:*": ["publish", "subscribe", "presence"] },
+    // ブラウザ側(src/lib/ably.ts)は接続ごとに clientId: "anon-<random>" を
+    // 指定する。TokenParams に clientId が無いと発行トークンは無clientId
+    // 扱いになり、clientId 付きクライアントとは一致せず 40102(invalid
+    // clientId for credentials) で接続拒否される。"*" = 任意のclientIdを許可。
+    clientId: "*",
   });
 }
