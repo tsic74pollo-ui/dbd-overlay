@@ -115,10 +115,6 @@ export const compressSettings = (
     const c = stripObject(s.matchLog, defaultMatchLog());
     if (Object.keys(c).length > 0) out.matchLog = c as MatchLogWidget;
   }
-  // 試合情報パネルの位置オフセット。既定 {0,0} のときは送らない
-  if (s.infoPos && (s.infoPos.x !== 0 || s.infoPos.y !== 0)) {
-    out.infoPos = s.infoPos;
-  }
   return out;
 };
 
@@ -145,8 +141,6 @@ export const decompressSettings = (
     matchLog: s.matchLog
       ? normalizeMatchLog(s.matchLog as Partial<MatchLogWidget>)
       : undefined,
-    // 欠落 = レイアウト本来の位置。既定の補完は描画側の ?? に一任(他フィールドと同じ原則)
-    infoPos: s.infoPos,
   };
 };
 

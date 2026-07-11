@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { Move } from "lucide-react";
 import type { OverlaySettings, SetsLine } from "@/lib/types";
 import { cn } from "@/lib/cn";
 import { MatchLogView } from "@/components/MatchLogView";
@@ -7,19 +6,15 @@ import { PerkCoverView } from "@/components/overlay/parts/PerkCoverView";
 import { MatchTimerView } from "@/components/overlay/parts/MatchTimerView";
 import { SessionTimerView } from "@/components/overlay/parts/SessionTimerView";
 import { LAYOUTS } from "@/components/overlay/layoutRegistry";
-import { useDraggablePercent } from "@/lib/useDraggablePercent";
-import { STAGE_SELECTOR } from "@/components/overlay/parts/helpers";
 
 type Props = {
   settings: OverlaySettings;
-  /** When true, PerkCover / MatchTimer / SessionTimer / MatchLog / info panel become draggable for in-place positioning. */
+  /** When true, PerkCover / MatchTimer / SessionTimer / MatchLog become draggable for in-place positioning. */
   editable?: boolean;
   onMovePerkCover?: (x: number, y: number) => void;
   onMoveMatchTimer?: (x: number, y: number) => void;
   onMoveSessionTimer?: (x: number, y: number) => void;
   onMoveMatchLog?: (x: number, y: number) => void;
-  /** 試合情報パネル(1段目〜SET一覧)全体の移動。グループとして一括で動く */
-  onMoveInfo?: (x: number, y: number) => void;
 };
 
 /**
@@ -37,23 +32,11 @@ export function OverlayView({
   onMoveMatchTimer,
   onMoveSessionTimer,
   onMoveMatchLog,
-  onMoveInfo,
 }: Props) {
   const { perkCover, matchTimer, sessionTimer, lines } = settings;
   const [autoSetIndex, setAutoSetIndex] = useState(0);
   const [setFading, setSetFading] = useState(false);
   const [now, setNow] = useState(() => Date.now());
-
-  // 試合情報パネル(1段目〜SET)のグループ位置。{0,0} = レイアウト本来の位置。
-  // 「自然位置からのオフセット」なので負値が正当(下寄せレイアウトを上に動かす等)。
-  // 共有フックの 0-100 クランプは使わず、範囲制限は onMoveInfo 側(EditorPage)が担う。
-  const infoPos = settings.infoPos ?? { x: 0, y: 0 };
-  const infoDragProps = useDraggablePercent({
-    current: infoPos,
-    stageSelector: STAGE_SELECTOR,
-    onDrag: ({ x, y }) => onMoveInfo?.(x, y),
-    clamp: false,
-  });
 
   // タイマー稼働中のみ 250ms ごとに now を更新
   const timersRunning =
@@ -122,45 +105,14 @@ export function OverlayView({
       className={cn("relative w-full h-full", "overlay-stage")}
       style={{ fontFamily: "Arial, sans-serif" }}
     >
-      {/* テンプレート別のテキスト/SET 表示 — infoPos %ぶんグループごと平行移動。
-          ラッパーはステージ同寸なので translate の % がそのままステージ % に一致する。
-          pointer-events:none で他ウィジェットのドラッグ/クリックを一切妨げない。 */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          transform:
-            infoPos.x !== 0 || infoPos.y !== 0
-              ? `translate(${infoPos.x}%, ${infoPos.y}%)`
-              : undefined,
-        }}
-      >
-        <Layout
-          settings={settings}
-          setIndex={setIndex}
-          setFading={setFading}
-          setsLine={setsLine}
-          setsVisible={setsVisible}
-        />
-      </div>
-
-      {/* 編集モード: 試合情報パネルをまとめて掴むドラッグチップ(配信出力には出ない)。
-          オフセットが負でもチップはステージ内に留めて掴めるようにする(基準値は実値)。 */}
-      {editable && onMoveInfo && (
-        <div
-          className="edit-draggable absolute z-10 flex items-center gap-1 rounded bg-gray-900/85 border border-gray-500 px-2 py-1 text-[11px] text-gray-100 select-none"
-          style={{
-            left: `${Math.max(0, Math.min(96, infoPos.x))}%`,
-            top: `${Math.max(0, Math.min(96, infoPos.y))}%`,
-            cursor: "grab",
-          }}
-          title="ドラッグで試合情報(1段目〜SET)をまとめて移動 / ダブルクリックで初期位置に戻す"
-          onDoubleClick={() => onMoveInfo(0, 0)}
-          {...infoDragProps}
-        >
-          <Move className="w-3 h-3" />
-          試合情報
-        </div>
-      )}
+      {/* テンプレート別のテキスト/SET 表示（整列: 左/中央/右 は Layout 内部が担当） */}
+      <Layout
+        settings={settings}
+        setIndex={setIndex}
+        setFading={setFading}
+        setsLine={setsLine}
+        setsVisible={setsVisible}
+      />
 
       {/* 共通: パーク隠しカバー */}
       {perkCover?.enabled && (

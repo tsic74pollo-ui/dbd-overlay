@@ -254,9 +254,6 @@ export type OverlaySettings = {
   matchLog?: MatchLogWidget;
   /** オーバーレイのレイアウトテンプレート。未指定なら "classic" 扱い(後方互換) */
   layoutId?: LayoutId;
-  /** 試合情報パネル(1段目〜SET一覧)全体の位置オフセット %。
-   *  未指定/{0,0} でレイアウト本来の位置(後方互換)。プレビューのドラッグで更新される。 */
-  infoPos?: { x: number; y: number };
 };
 
 export type Room = {
