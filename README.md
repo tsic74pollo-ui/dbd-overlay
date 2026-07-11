@@ -2,6 +2,9 @@
 
 Dead by Daylight のスクリム / 大会用 OBS オーバーレイエディタ。
 
+> **Disclaimer**: 本ツールは非公式のファンメイドツールであり、Behaviour Interactive とは一切関係ありません。ゲーム内アセットは使用していません。
+> This is an unofficial fan-made tool, not affiliated with or endorsed by Behaviour Interactive. Dead by Daylight™ is a trademark of Behaviour Interactive Inc. No in-game assets are used.
+
 - **Ably Realtime ライブ反映** — エディタで編集 → OBS Browser Source に即時反映（HTML エクスポート不要）
 - **複数ルーム** — OBS のシーンごとに別オーバーレイを同時運用、エディタを開いている間は全ルーム同時配信
 - **パーク隠し ＋ マッチタイマー** — ゴースティング対策（下記参照）

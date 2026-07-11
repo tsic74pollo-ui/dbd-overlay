@@ -166,6 +166,13 @@ function EditorPageInner() {
         </div>
       </div>
 
+      {/* 非公式ディスクレーマー(エディタのみ。オーバーレイ出力には出さない) */}
+      <footer className="shrink-0 border-t border-gray-800 bg-gray-950 px-3 py-1 text-center text-[10px] leading-4 text-gray-500">
+        非公式のファンメイドツールです。Behaviour Interactive とは無関係です。 / Unofficial
+        fan-made tool, not affiliated with Behaviour Interactive. Dead by Daylight™ is a
+        trademark of Behaviour Interactive Inc.
+      </footer>
+
       <HotkeyToast message={toast} />
 
       <OnboardingWizard open={guideOpen} onClose={closeGuide} />
