@@ -1,15 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <!-- ひし形エンブレム: パーク隠しカバー/SETバッジと同じダイヤモチーフ(案A・2026-07-17承認) -->
   <rect width="32" height="32" rx="8" fill="#120a0c"/>
-  <g stroke-linecap="round">
-    <path d="M8 5 L13 27" stroke="#7a0f16" stroke-width="4.6"/>
-    <path d="M15 3 L20 29" stroke="#7a0f16" stroke-width="4.6"/>
-    <path d="M22 5 L27 27" stroke="#7a0f16" stroke-width="4.6"/>
-    <path d="M8 5 L13 27" stroke="url(#dbd-claw-grad)" stroke-width="2.4"/>
-    <path d="M15 3 L20 29" stroke="url(#dbd-claw-grad)" stroke-width="2.4"/>
-    <path d="M22 5 L27 27" stroke="url(#dbd-claw-grad)" stroke-width="2.4"/>
-  </g>
+  <path d="M16 4 L28 16 L16 28 L4 16 Z" fill="none" stroke="url(#dbd-dia-grad)" stroke-width="2.6" stroke-linejoin="round"/>
+  <path d="M16 10 L22 16 L16 22 L10 16 Z" fill="url(#dbd-dia-grad)"/>
   <defs>
-    <linearGradient id="dbd-claw-grad" x1="16" y1="3" x2="16" y2="29" gradientUnits="userSpaceOnUse">
+    <linearGradient id="dbd-dia-grad" x1="16" y1="4" x2="16" y2="28" gradientUnits="userSpaceOnUse">
       <stop stop-color="#ff5a5a"/>
       <stop offset="1" stop-color="#b3001f"/>
     </linearGradient>
