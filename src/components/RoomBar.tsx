@@ -35,6 +35,7 @@ export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
   const setRooms = useAppStore((s) => s.setRooms);
   const update = useAppStore((s) => s.updateActiveRoomSettings);
   const status = useConnectionStore((s) => s.status);
+  const lastError = useConnectionStore((s) => s.lastError);
 
   const active = useAppStore(selectActiveRoom);
   const [editingName, setEditingName] = useState(false);
@@ -279,6 +280,14 @@ export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
           <div className="flex items-center gap-1.5">
             <span className={`inline-block w-2 h-2 rounded-full ${statusDot}`} />
             <span className="text-xs text-gray-300">{statusText}</span>
+            {status === "error" && lastError && (
+              <span
+                className="text-[11px] text-red-300 max-w-[320px] truncate"
+                title={lastError}
+              >
+                {lastError}
+              </span>
+            )}
           </div>
           {onOpenGuide && (
             <button

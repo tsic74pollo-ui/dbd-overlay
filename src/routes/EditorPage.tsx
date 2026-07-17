@@ -5,6 +5,7 @@ import { OverlayView } from "@/components/OverlayView";
 import { RoomBar } from "@/components/RoomBar";
 import { useRoomsSync } from "@/lib/useRoomsSync";
 import { useAutoBackup } from "@/lib/useAutoBackup";
+import { useBroadcastFitHealer } from "@/lib/broadcastFit";
 import { Move } from "lucide-react";
 import {
   normalizePerkCover,
@@ -80,6 +81,8 @@ function EditorPageInner() {
   useRoomsSync();
   // ルーム情報を自動でローカルにスナップショット保存（誤削除・データ消失対策）
   useAutoBackup();
+  // Ably 64KiB 上限を超えるルームの画像を自動縮小（レガシー無圧縮画像の恒久修復）
+  useBroadcastFitHealer();
 
   if (!room) return null;
 

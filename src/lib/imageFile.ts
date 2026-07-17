@@ -15,20 +15,22 @@ export type ImageFileResult =
 // lines/その他設定と合算しても Ably 64KiB に収まる安全マージン。
 const DATA_URL_MAX_CHARS = 60_000;
 
-const loadImage = (file: File): Promise<HTMLImageElement> =>
+const loadImageFromSrc = (src: string, revoke = false): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
-      URL.revokeObjectURL(url);
+      if (revoke) URL.revokeObjectURL(src);
       resolve(img);
     };
     img.onerror = () => {
-      URL.revokeObjectURL(url);
+      if (revoke) URL.revokeObjectURL(src);
       reject(new Error("画像として読み込めませんでした"));
     };
-    img.src = url;
+    img.src = src;
   });
+
+const loadImage = (file: File): Promise<HTMLImageElement> =>
+  loadImageFromSrc(URL.createObjectURL(file), true);
 
 const drawToDataUrl = (
   img: HTMLImageElement,
@@ -84,4 +86,40 @@ export async function readImageFileScaled(file: File): Promise<ImageFileResult> 
     ok: false,
     error: "画像を十分に圧縮できませんでした。シンプルな画像(ロゴ等)を使ってください",
   };
+}
+
+/** 保存済みの dataURL を maxChars 以内に再縮小する。
+ *  用途: readImageFileScaled 導入(2026-07-11)以前にアップロードされた無圧縮画像や、
+ *  画像が複数あって合算が Ably 64KiB を超えるケースの自動修復(broadcastFit.ts)。
+ *  収まらなければ null(呼び出し側は元のまま維持)。 */
+export async function shrinkDataUrl(
+  dataUrl: string,
+  maxChars: number,
+): Promise<string | null> {
+  if (dataUrl.length <= maxChars) return dataUrl;
+  let img: HTMLImageElement;
+  try {
+    img = await loadImageFromSrc(dataUrl);
+  } catch {
+    return null;
+  }
+  const preferJpeg = dataUrl.startsWith("data:image/jpeg");
+  const attempts: Array<{ dim: number; type: "image/png" | "image/jpeg" }> = [
+    { dim: 512, type: preferJpeg ? "image/jpeg" : "image/png" },
+    { dim: 384, type: preferJpeg ? "image/jpeg" : "image/png" },
+    { dim: 256, type: preferJpeg ? "image/jpeg" : "image/png" },
+    { dim: 160, type: preferJpeg ? "image/jpeg" : "image/png" },
+    { dim: 512, type: "image/jpeg" },
+    { dim: 256, type: "image/jpeg" },
+    { dim: 128, type: "image/jpeg" },
+  ];
+  try {
+    for (const a of attempts) {
+      const out = drawToDataUrl(img, a.dim, a.type);
+      if (out.length <= maxChars) return out;
+    }
+  } catch {
+    return null;
+  }
+  return null;
 }

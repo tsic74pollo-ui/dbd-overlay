@@ -34,6 +34,9 @@ export function useRoomsSync() {
 
   const handles = useRef<Map<string, Handle>>(new Map());
   const statuses = useRef<Map<string, ConnectionStatus>>(new Map());
+  // publish 失敗(64KB超過等)を保持。接続は "live" のままでも配信は死んでいる
+  // ケースがあるため、接続ステータスとは別に持ち、表示上はこちらを優先する。
+  const pubErrors = useRef<Map<string, string>>(new Map());
   const pending = useRef<Set<string>>(new Set());
   const debounce = useRef<number | null>(null);
   const lastHash = useRef<Map<string, string>>(new Map());
@@ -51,6 +54,11 @@ export function useRoomsSync() {
   };
 
   const reportStatus = () => {
+    // 配信失敗が1件でもあれば最優先で見せる(Liveに見えて届いていないのが最悪)
+    if (pubErrors.current.size > 0) {
+      const first = pubErrors.current.values().next().value;
+      return setStatus("error", first ?? "配信エラー");
+    }
     const vals = [...statuses.current.values()];
     if (vals.length === 0) return setStatus("idle");
     if (vals.includes("live")) return setStatus("live");
@@ -85,6 +93,14 @@ export function useRoomsSync() {
           }
           reportStatus();
         },
+        onPublishResult: (ok, errMsg) => {
+          if (ok) {
+            if (pubErrors.current.delete(id)) reportStatus();
+          } else {
+            pubErrors.current.set(id, errMsg ?? "配信エラー");
+            reportStatus();
+          }
+        },
         onViewerCount: (count) => {
           const prev = viewerCounts.current.get(id) ?? 0;
           viewerCounts.current.set(id, count);
@@ -107,6 +123,7 @@ export function useRoomsSync() {
       handles.current.get(id)?.unsubscribe();
       handles.current.delete(id);
       statuses.current.delete(id);
+      pubErrors.current.delete(id);
       pending.current.delete(id);
       lastHash.current.delete(id);
       viewerCounts.current.delete(id);
@@ -192,6 +209,7 @@ export function useRoomsSync() {
   useEffect(() => {
     const map = handles.current;
     const sts = statuses.current;
+    const errs = pubErrors.current;
     const pend = pending.current;
     const hashes = lastHash.current;
     const viewers = viewerCounts.current;
@@ -200,6 +218,7 @@ export function useRoomsSync() {
       for (const h of map.values()) h?.unsubscribe();
       map.clear();
       sts.clear();
+      errs.clear();
       pend.clear();
       hashes.clear();
       viewers.clear();
