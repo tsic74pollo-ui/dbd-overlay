@@ -42,8 +42,32 @@ export function OverlayPage() {
     );
   }
 
-  // Initial connection: don't render anything until first state arrives
+  // Initial connection: don't render anything until first state arrives.
+  // ?debug=1 のときだけ接続状況を表示する — 「接続済みだが editor 不在で
+  // state が来ない」(URLのルームID違い等) を OBS 上で切り分けられるように。
   if (!settings) {
+    if (debug) {
+      return (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 4,
+            right: 4,
+            fontSize: 10,
+            color: status === "live" ? "#f59e0b" : "#ef4444",
+            background: "rgba(0,0,0,0.4)",
+            padding: "2px 6px",
+            borderRadius: 4,
+            fontFamily: "monospace",
+            pointerEvents: "none",
+          }}
+        >
+          {status === "live"
+            ? `接続OK・エディタからの配信待ち (room=${roomId})`
+            : `${status} (room=${roomId})`}
+        </div>
+      );
+    }
     return null;
   }
 
