@@ -194,9 +194,9 @@ export type PerkCover = Rect & {
    */
   forceReleased?: boolean;
   /**
-   * 視点反転(false=Killer 右下/true=Survivor 左下)。
-   * 内部的には x 値を `100 - x - width` で水平反転して描画する。
-   * オリジナルの x/y は store に保存したまま描画時のみ変換 → 視点切替で元位置が壊れない。
+   * @deprecated 2026-07-17 廃止。パークは Killer / Survivor とも画面右下に表示される
+   * (以前は Survivor=左下と誤認して x を水平反転していた)。旧データ互換のため型は残すが
+   * 読み書きしない。normalizePerkCover が読み込み時に破棄する。
    */
   mirror?: boolean;
 };

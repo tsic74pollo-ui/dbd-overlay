@@ -53,12 +53,8 @@ export function PerkCoverView({
   const reveal = pc.reveal ?? "fade";
   const revealMs = Math.max(120, Math.min(4000, pc.revealDurationMs ?? 600));
 
-  // 視点反転(Killer 右下 ↔ Survivor 左下)。
-  // store の x は元のまま保持し、描画時のみ水平反転して位置を求める。
-  const renderedX = pc.mirror ? Math.max(0, 100 - pc.x - pc.width) : pc.x;
-
   const coverStyle = {
-    left: `${renderedX}%`,
+    left: `${pc.x}%`,
     top: `${pc.y}%`,
     width: `${pc.width}%`,
     height: `${pc.height}%`,
@@ -112,7 +108,7 @@ export function PerkCoverView({
         <div
           className="perk-countdown-anchor"
           style={{
-            left: `${renderedX}%`,
+            left: `${pc.x}%`,
             top: `${pc.y}%`,
             width: `${pc.width}%`,
             height: `${pc.height}%`,

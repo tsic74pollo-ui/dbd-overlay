@@ -27,7 +27,6 @@ export function OnboardingWizard({ open, onClose }: Props) {
   const update = useAppStore((s) => s.updateActiveRoomSettings);
 
   const [step, setStep] = useState(0);
-  const [mirror, setMirror] = useState(false);
   // 既定はゲーム側デフォルトの HUD 100%(配列順ではなく明示キーで選ぶ)
   const [presetKey, setPresetKey] = useState("1080p-100");
   const [image, setImage] = useState<string | null>(null);
@@ -41,10 +40,8 @@ export function OnboardingWizard({ open, onClose }: Props) {
     PERK_COVER_PRESETS.find((p) => p.key === presetKey) ?? PERK_COVER_PRESETS[0];
   const overlayUrl = `${window.location.origin}/overlay?room=${room.id}`;
 
-  // ミニプレビュー上のひし形位置（mirror は描画時だけ x 反転 — 本体と同じ規約）
-  const previewX = mirror
-    ? Math.max(0, 100 - preset.rect.x - preset.rect.width)
-    : preset.rect.x;
+  // ミニプレビュー上のひし形位置（パークは Killer/Survivor とも右下固定）
+  const previewX = preset.rect.x;
 
   const applySettings = () => {
     update((s) => {
@@ -54,7 +51,6 @@ export function OnboardingWizard({ open, onClose }: Props) {
         perkCover: {
           ...pc,
           enabled: true,
-          mirror,
           x: preset.rect.x,
           y: preset.rect.y,
           width: preset.rect.width,
@@ -123,7 +119,7 @@ export function OnboardingWizard({ open, onClose }: Props) {
 
         {/* ステップインジケータ */}
         <div className="flex items-center gap-2 px-5 pt-4">
-          {["視点とHUD", "ロゴ（任意）", "OBSに接続"].map((label, i) => (
+          {["HUDスケール", "ロゴ（任意）", "OBSに接続"].map((label, i) => (
             <div key={label} className="flex-1">
               <div
                 className={cn(
@@ -148,31 +144,13 @@ export function OnboardingWizard({ open, onClose }: Props) {
           {step === 0 && (
             <>
               <p className="text-sm text-gray-300">
-                あなたの視点と DBD の HUD スケール設定を選んでください。
-                パーク欄を隠すカバーの位置が自動で決まります（後から微調整できます）。
+                DBD の HUD スケール設定を選んでください。パーク欄を隠すカバーの位置が
+                自動で決まります（後から微調整できます）。
+                <br />
+                <span className="text-xs text-gray-400">
+                  ※ パークは Killer / Survivor どちらも画面右下に表示されます。
+                </span>
               </p>
-
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { v: false, label: "Killer", sub: "パークは右下" },
-                  { v: true, label: "Survivor", sub: "パークは左下" },
-                ].map((opt) => (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    onClick={() => setMirror(opt.v)}
-                    className={cn(
-                      "rounded-lg border-2 px-3 py-3 text-left transition",
-                      mirror === opt.v
-                        ? "border-orange-500 bg-orange-500/15"
-                        : "border-gray-700 bg-gray-800 hover:border-gray-500",
-                    )}
-                  >
-                    <div className="text-sm font-bold text-white">{opt.label}</div>
-                    <div className="text-xs text-gray-400">{opt.sub}</div>
-                  </button>
-                ))}
-              </div>
 
               <div className="grid grid-cols-2 gap-2">
                 {PERK_COVER_PRESETS.map((p) => (

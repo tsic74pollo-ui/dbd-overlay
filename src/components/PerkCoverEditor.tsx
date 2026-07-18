@@ -117,46 +117,6 @@ export function PerkCoverEditor({ value, onChange }: Props) {
 
       {value.enabled && (
         <>
-          {/* 視点反転(Killer 右下 ↔ Survivor 左下) */}
-          <div className="flex items-center justify-between p-3 bg-gray-750 rounded">
-            <div className="flex-1">
-              <Label className="text-white text-sm font-semibold">視点</Label>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {value.mirror
-                  ? "Survivor 視点 (左下にカバー)"
-                  : "Killer 視点 (右下にカバー)"}
-              </p>
-            </div>
-            <div className="flex gap-1.5">
-              <button
-                type="button"
-                onClick={() => set({ mirror: false })}
-                className={
-                  "px-3 py-1.5 rounded text-xs font-bold border transition " +
-                  (!value.mirror
-                    ? "bg-orange-500 border-orange-400 text-white"
-                    : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
-                }
-                title="Killer 視点: パーク表示は画面右下"
-              >
-                Killer
-              </button>
-              <button
-                type="button"
-                onClick={() => set({ mirror: true })}
-                className={
-                  "px-3 py-1.5 rounded text-xs font-bold border transition " +
-                  (value.mirror
-                    ? "bg-orange-500 border-orange-400 text-white"
-                    : "bg-gray-700 border-gray-600 text-gray-200 hover:bg-gray-600")
-                }
-                title="Survivor 視点: パーク表示は画面左下"
-              >
-                Survivor
-              </button>
-            </div>
-          </div>
-
           {/* 画像 / ロゴ */}
           <input type="file" id="perk-cover-upload" accept="image/*" onChange={handleUpload} className="hidden" />
           <label

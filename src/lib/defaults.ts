@@ -152,7 +152,6 @@ export const defaultPerkCover = (): PerkCover => {
     urgentBelowSec: 10,
   },
   forceReleased: false,
-  mirror: false,
   };
 };
 
@@ -234,7 +233,7 @@ export const normalizePerkCover = (pc?: Partial<PerkCover>): PerkCover => {
   delete (mergedGlow as Partial<PerkCoverGlow>).rainbow;
   delete (mergedGlow as Partial<PerkCoverGlow>).flow;
   delete (mergedGlow as { audio?: unknown }).audio;
-  return {
+  const out = {
     ...d,
     ...pc,
     glow: mergedGlow,
@@ -242,8 +241,11 @@ export const normalizePerkCover = (pc?: Partial<PerkCover>): PerkCover => {
     reveal: coerceReveal(pc.reveal),
     timer: { ...d.timer, ...pc.timer },
     forceReleased: pc.forceReleased ?? false,
-    mirror: pc.mirror ?? false,
   };
+  // 廃止(2026-07-17): 視点反転(mirror)。パークは Killer/Survivor とも右下なので
+  // 読み込み時に破棄し、再書き出し時に冗長フィールドを残さない。
+  delete (out as { mirror?: boolean }).mirror;
+  return out;
 };
 
 export const normalizeMatchTimer = (mt?: Partial<MatchTimer>): MatchTimer => ({
