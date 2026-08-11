@@ -438,6 +438,8 @@ UI に推定コストと実績コストを表示し、ユーザーが Provider �
 | --- | --- | --- |
 | A | **対象 OS** | **Windows**（2026-08-10 確定）。macOS / Linux は後追い |
 | B | **ASR 実行環境** | Windows + NVIDIA GPU（CUDA）。`faster-whisper` / `Qwen3-ASR` 路線が有効。CPU（int8）フォールバックも用意 |
+| C | **配置** | **新規リポジトリ**（2026-08-10 確定）。dbd-overlay とはコードを共有しない |
+| D | **主要素材** | 海外 DBD プレイヤーの動画。とくに**競技シーン（複数人 VC）が実運用の中心**。→ Phase 0 で話者分離の実現可能性を測る（[`02`](./02-asr-benchmark-plan.md) §3.1） |
 
 > **macOS を後追いする場合の注意**: `faster-whisper` の基盤である CTranslate2 は
 > **Metal/MPS に非対応**で、Apple Silicon では CPU 実行しかできない
