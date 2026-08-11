@@ -1,0 +1,262 @@
+# DBD 用語辞書 — コア（手書き）
+#
+# 設計方針: docs/subtitle-translator/03-glossary-design.md
+#
+# 収録基準（この3つのいずれかに該当する語だけを入れる）:
+#   1. 直訳すると意味が壊れる語
+#   2. 日本語コミュニティに定着した呼称がある語
+#   3. 感情・非難のニュアンスを持つ語
+# → "generator → 発電機" のようにそのまま訳せる語は入れない（トークンの無駄）
+#
+# confidence:
+#   verified     … 一次情報で裏取り済み。LLM に確定情報として渡す
+#   needs_review … 妥当と思われるが未検証。LLM には「参考」として弱く渡す
+#   unverified   … 推測。プロンプトに入れない（人間のレビュー待ち）
+#
+# ⚠️ 未検証の語を推測で埋めないこと。空欄のほうが誤った確信より安全。
+
+version: 1
+updated: "2026-08-10"
+
+entries:
+  # ==========================================================================
+  # slang — 直訳が壊滅する語。本辞書の中核
+  # ==========================================================================
+
+  - id: chest-looting-ko
+    category: slang
+    ja:
+      canonical: "チェスト漁り"
+      aliases: ["宝箱漁り", "箱開け"]
+    source_terms:
+      ko: ["탕수육"]
+      en: ["chest looting", "looting chests"]
+    literal_trap: "酢豚"
+    do_not_translate_literally: true
+    nuance: "「発電機を回さず宝箱ばかり開けている」という非難・呆れ。単なる行為の描写ではない"
+    note: >-
+      由来は「みんな자장면(ジャージャー麺=発電機)を食べているのに、
+      空気を読まず탕수육(酢豚=宝箱)ばかりつまんでいる」という比喩。
+    confidence: verified
+    sources: ["https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"]
+
+  - id: generator-ko-jjajangmyeon
+    category: slang
+    ja:
+      canonical: "発電機"
+      aliases: ["発電", "ジェネ"]
+    source_terms:
+      ko: ["자장면"]
+    literal_trap: "ジャージャー麺"
+    do_not_translate_literally: true
+    nuance: "「本来やるべき仕事」の比喩。탕수육(宝箱)と対で使われる"
+    confidence: verified
+    sources: ["https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"]
+
+  - id: dwight-ko-nickname
+    category: survivor
+    ja:
+      canonical: "ドワイト"
+    source_terms:
+      ko: ["김풍"]
+      en: ["Dwight", "Dwight Fairfield"]
+    literal_trap: "キムプン"
+    do_not_translate_literally: true
+    note: "同名の韓国の漫画家に似ていることから付いた韓国式のあだ名。日本では通じないため正式名に戻す"
+    confidence: verified
+    sources: ["https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"]
+
+  - id: three-gen-patrol-ko
+    category: strategy
+    ja:
+      canonical: "3ジェン粘り"
+      aliases: ["三角発電の巡回", "3発電キープ"]
+    source_terms:
+      ko: ["변전", "변태전구"]
+      en: ["3-gen", "three gen", "gen patrol"]
+    nuance: "近接した3台の発電機を巡回し続ける戦術。サバイバー側からは嫌がられる戦法として語られることが多い"
+    note: "韓国語ではドクターの構成を指す文脈で使われることが多いが、戦術自体はキラー共通"
+    confidence: needs_review
+    sources: ["https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"]
+
+  # ==========================================================================
+  # strategy — 戦術用語。日本語に定着した呼称がある
+  # ==========================================================================
+
+  - id: tunneling
+    category: strategy
+    ja:
+      canonical: "トンネル"
+      aliases: ["トンネリング", "粘着"]
+    source_terms:
+      en: ["tunneling", "tunnel", "tunnelling"]
+      ko: ["터널링"]
+    nuance: "非難の意味を含むことが多い。中立の描写として使われる場合もあるため文脈で判断する"
+    note: "フックから降ろされた直後の同じサバイバーを執拗に狙い続けること"
+    confidence: verified
+    sources:
+      - "https://eip.gg/dbd/guides/dictionary-slang-and-lingo/"
+      - "https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"
+
+  - id: camping
+    category: strategy
+    ja:
+      canonical: "キャンプ"
+      aliases: ["張り付き"]
+    source_terms:
+      en: ["camping", "camp"]
+      ko: ["캠핑"]
+    nuance: "非難の意味を含むことが多い"
+    note: "フックに吊られたサバイバーの近くに留まり、救助を妨害する戦術"
+    confidence: verified
+    sources: ["https://eip.gg/dbd/guides/dictionary-slang-and-lingo/"]
+
+  - id: face-camping
+    category: strategy
+    ja:
+      canonical: "面前キャンプ"
+      aliases: ["ガン待ち", "目の前キャンプ"]
+    source_terms:
+      en: ["face camping", "facecamp", "face camp"]
+      ko: ["키캠", "키스캠핑"]
+    nuance: "通常のキャンプより強い非難を含む"
+    note: "フックの真正面に立ち続ける、キャンプの中でも露骨な形"
+    confidence: verified
+    sources: ["https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"]
+
+  - id: looping
+    category: strategy
+    ja:
+      canonical: "板グル"
+      aliases: ["ループ", "グルグル"]
+    source_terms:
+      en: ["looping", "loop", "loops"]
+    note: "障害物や板の周囲を回ってキラーの時間を稼ぐ、チェイスの基本技術"
+    confidence: verified
+    sources: ["https://eip.gg/dbd/guides/dictionary-slang-and-lingo/"]
+
+  - id: gen-rush
+    category: strategy
+    ja:
+      canonical: "発電機ラッシュ"
+      aliases: ["ジェネラッシュ", "発電機回し"]
+    source_terms:
+      en: ["gen rush", "genrush", "gen rushing"]
+    nuance: "キラー側が不満を表明する文脈で使われることが多い、やや揶揄的な語"
+    note: "サバイバーが発電機修理に集中して短時間で試合を終わらせること"
+    confidence: verified
+    sources: ["https://eip.gg/dbd/guides/dictionary-slang-and-lingo/"]
+
+  - id: flashlight-save
+    category: strategy
+    ja:
+      canonical: "閃光弾救助"
+      aliases: ["フラッシュ救助", "フラッシュライトセーブ"]
+    source_terms:
+      en: ["flashlight save", "flashlight rescue", "flashy save"]
+    note: "運搬中のキラーを懐中電灯で目つぶしし、担がれたサバイバーを落とさせること"
+    confidence: verified
+    sources: ["https://deadbydaylight.fandom.com/wiki/Flashlights"]
+
+  - id: ghosting
+    category: strategy
+    ja:
+      canonical: "ゴースティング"
+    source_terms:
+      en: ["ghosting", "stream sniping"]
+    note: >-
+      配信を見て相手の情報（パーク構成・位置）を得る不正行為。
+      本ツールと同じリポジトリの dbd-overlay が対策機能を持つ用語でもある。
+    confidence: verified
+    sources: ["https://github.com/tsic74pollo-ui/dbd-overlay"]
+
+  - id: bad-manners
+    category: slang
+    ja:
+      canonical: "煽り"
+      aliases: ["BM", "しゃがみ煽り"]
+    source_terms:
+      en: ["BM", "bad manners", "t-bag", "tbag", "teabagging"]
+    nuance: "強い非難。訳文でもその感情を保つ"
+    note: "しゃがみ連打などで相手を挑発する行為。日本語では「煽り」が定着"
+    confidence: verified
+    sources: ["https://eip.gg/dbd/guides/dictionary-slang-and-lingo/"]
+
+  - id: swf
+    category: mechanic
+    ja:
+      canonical: "身内"
+      aliases: ["SWF", "身内パ", "フレンドパーティ"]
+    source_terms:
+      en: ["SWF", "survive with friends", "swf squad"]
+    note: "フレンドとパーティを組んだサバイバー側。VC 前提の連携があるため語られ方に含みが出やすい"
+    confidence: needs_review
+
+  # ==========================================================================
+  # mechanic — ゲーム内公式用語のうち、呼称が独特なもの
+  # ==========================================================================
+
+  - id: hook
+    category: mechanic
+    ja:
+      canonical: "フック"
+      aliases: ["吊り", "吊る"]
+    source_terms:
+      en: ["hook", "hooked"]
+      ko: ["갈고리"]
+    note: "「吊られた」「吊る」は日本語コミュニティで極めて頻出。直訳の「引っ掛ける」は不自然"
+    confidence: verified
+    sources: ["https://namu.wiki/w/DEAD%20BY%20DAYLIGHT"]
+
+  - id: pallet
+    category: mechanic
+    ja:
+      canonical: "板"
+    source_terms:
+      en: ["pallet", "pallets"]
+      ko: ["판"]
+    literal_trap: "パレット"
+    do_not_translate_literally: true
+    note: "「パレット」と訳すと物流用語に見える。日本語コミュニティでは一貫して「板」"
+    confidence: needs_review
+
+  - id: hatch
+    category: mechanic
+    ja:
+      canonical: "ハッチ"
+      aliases: ["地下ハッチ", "脱出ハッチ"]
+    source_terms:
+      en: ["hatch", "the hatch"]
+    confidence: needs_review
+
+  - id: mori
+    category: mechanic
+    ja:
+      canonical: "モリ"
+      aliases: ["処刑"]
+    source_terms:
+      en: ["mori", "memento mori"]
+    note: "日本語でも「モリ」で通じる。「memento mori」の略"
+    confidence: needs_review
+
+  - id: disconnect
+    category: slang
+    ja:
+      canonical: "切断"
+      aliases: ["DC", "落ち"]
+    source_terms:
+      en: ["DC", "disconnect", "dced"]
+    nuance: "多くの場合、非難や苛立ちを伴う"
+    confidence: verified
+    sources: ["https://eip.gg/dbd/guides/dictionary-slang-and-lingo/"]
+
+  # ==========================================================================
+  # TODO — 未調査。推測で埋めないこと
+  # ==========================================================================
+  # ドイツ語 / フランス語 / スペイン語 / イタリア語 / ポーランド語のコミュニティ隠語は
+  # Phase 2 で調査する。英語由来のカタカナ語がそのまま使われている可能性が高く、
+  # 専用エントリは少ない見込みだが、確認するまで空欄にしておく。
+  #
+  # キラー名・サバイバー名・パーク名・アドオン・マップ名は
+  # tools/glossary-import.ts による自動生成に回す（03-glossary-design.md §4）。
+  # 手書きしない。

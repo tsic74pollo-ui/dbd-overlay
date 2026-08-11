@@ -1,8 +1,14 @@
 # DBD Subtitle Translator — 調査結果と実装計画
 
 対象仕様書: [`00-requirements-v0.2.md`](./00-requirements-v0.2.md)
-ステータス: **承認待ち（実装未着手）**
-作成日: 2026-08-10
+ステータス: **承認待ち（コード実装は未着手。設計成果物のみ先行）**
+作成日: 2026-08-10 / 更新: 2026-08-10（対象 OS を Windows に確定）
+
+関連ドキュメント:
+- [`02-asr-benchmark-plan.md`](./02-asr-benchmark-plan.md) — Phase 0 の ASR 評価計画
+- [`03-glossary-design.md`](./03-glossary-design.md) — DBD 用語辞書の設計と運用
+- [`04-translation-prompt-design.md`](./04-translation-prompt-design.md) — 翻訳プロンプトと構造化出力
+- [`glossary/dbd-core.yaml`](./glossary/dbd-core.yaml) — 辞書の初期データ
 
 ---
 
@@ -426,12 +432,28 @@ UI に推定コストと実績コストを表示し、ユーザーが Provider �
 
 ## 12. 未確定事項（実装開始前にご確認いただきたい点）
 
+### 確定済み
+
+| # | 論点 | 決定 |
+| --- | --- | --- |
+| A | **対象 OS** | **Windows**（2026-08-10 確定）。macOS / Linux は後追い |
+| B | **ASR 実行環境** | Windows + NVIDIA GPU（CUDA）。`faster-whisper` / `Qwen3-ASR` 路線が有効。CPU（int8）フォールバックも用意 |
+
+> **macOS を後追いする場合の注意**: `faster-whisper` の基盤である CTranslate2 は
+> **Metal/MPS に非対応**で、Apple Silicon では CPU 実行しかできない
+> （[CTranslate2 #1562](https://github.com/OpenNMT/CTranslate2/issues/1562)）。
+> macOS 対応時は `mlx-whisper`（Metal）または
+> [WhisperKit](https://github.com/argmaxinc/WhisperKit)（CoreML + ANE、MIT、
+> pyannote 話者分離の SpeakerKit を同梱）を別 Provider として実装する。
+> `ASRProvider` 抽象があるため、パイプライン本体の変更は不要。
+
+### 未確定
+
 | # | 論点 | 推奨 |
 | --- | --- | --- |
 | 1 | **配置**: この dbd-overlay リポジトリ内の別ディレクトリ（例 `apps/subtitle-translator/`）か、新規リポジトリか | まったく別のアプリなので**新規リポジトリ**を推奨。ただし同一リポジトリでも `apps/` 分割で成立する |
-| 2 | **ASR 実行環境**: ローカル GPU 前提でよいか（docs から RTX 4060 SUPER 環境と推測） | ローカル GPU 前提。CPU フォールバックも用意 |
-| 3 | **Phase 0 のサンプル動画**: 英語 / 韓国語 / EU 圏 / ゲーム音強め / VC 明瞭 / 複数人 VC の 6 本を用意いただけるか | 各 2〜3 分。正解書き起こしは冒頭 60 秒分だけで十分 |
-| 4 | 対象 OS | Windows 優先（既存 `start.bat` から Windows 環境と判断）。macOS / Linux は後追い |
+| 2 | **Phase 0 のサンプル動画**: 英語 / 韓国語 / EU 圏 / ゲーム音強め / VC 明瞭 / 複数人 VC の 6 本を用意いただけるか | 各 2〜3 分。正解書き起こしは冒頭 60 秒分だけで十分 |
+| 3 | **GitHub の書き込み権限** | 現在 `403 Resource not accessible by integration` で push できない。Contents: Read and write の付与が必要 |
 
 ---
 
