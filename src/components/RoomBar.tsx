@@ -15,14 +15,13 @@ import { useAppStore, selectActiveRoom } from "@/store/appStore";
 import { useConnectionStore } from "@/store/connectionStore";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { LayoutPicker } from "@/components/LayoutPicker";
 import {
   exportRoomsToFile,
   importRoomsFromFile,
   mergeRoomsById,
   readSnapshots,
 } from "@/lib/backup";
-import { LAYOUTS, LAYOUT_IDS } from "@/components/overlay/layoutRegistry";
-import type { LayoutId } from "@/lib/types";
 
 export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
   const rooms = useAppStore((s) => s.rooms);
@@ -146,7 +145,7 @@ export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
 
   return (
     <>
-      <div className="flex items-center gap-2 flex-wrap p-3 bg-gray-900/90 border-b border-gray-800">
+      <div className="flex min-h-14 items-center gap-2.5 border-b border-[#2B3748] bg-[#111722]/95 px-3 py-2 shadow-[0_1px_0_rgba(255,255,255,.02)]">
         <span className="text-xs text-gray-400">ルーム:</span>
 
         {editingName ? (
@@ -209,36 +208,28 @@ export function RoomBar({ onOpenGuide }: { onOpenGuide?: () => void }) {
           削除
         </Button>
 
-        <div className="mx-2 h-6 w-px bg-gray-700" />
+        <div className="mx-1 h-7 w-px bg-[#2B3748]" />
 
-        <label
-          className="text-xs text-gray-400 flex items-center gap-1.5"
-          title="オーバーレイ全体の見た目テンプレート(ルームごと記憶)"
+        <LayoutPicker
+          value={active.settings.layoutId ?? "classic"}
+          settings={active.settings}
+          onChange={(layoutId) => update((s) => ({ ...s, layoutId }))}
+        />
+
+        <div className="mx-1 h-7 w-px bg-[#2B3748]" />
+
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={copyUrl}
+          title={overlayUrl}
+          className="h-9 border-orange-500/40 bg-orange-500/10 px-3 hover:border-orange-400 hover:bg-orange-500/15"
         >
-          レイアウト:
-          <select
-            value={active.settings.layoutId ?? "classic"}
-            onChange={(e) =>
-              update((s) => ({ ...s, layoutId: e.target.value as LayoutId }))
-            }
-            className="h-8 rounded border border-gray-600 bg-gray-700 px-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50"
-          >
-            {LAYOUT_IDS.map((id) => (
-              <option key={id} value={id} title={LAYOUTS[id].description}>
-                {LAYOUTS[id].label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="mx-2 h-6 w-px bg-gray-700" />
-
-        <Button size="sm" variant="outline" onClick={copyUrl} title={overlayUrl}>
           {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
           Browser Source URL
         </Button>
 
-        <div className="mx-2 h-6 w-px bg-gray-700" />
+        <div className="mx-1 h-7 w-px bg-[#2B3748]" />
 
         <Button
           size="sm"

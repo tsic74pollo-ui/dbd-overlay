@@ -239,7 +239,13 @@ export type LayoutId =
   | "classic" // 現行: 縦積み・左上集中・背景ブロック式
   | "floating-pill" // 個人配信向けの丸角ピル + ぼかし
   | "esports-score" // 公式大会風スコアバー(5 セル)
-  | "lower-third"; // 放送番組テロップ風(画面下 1/3)
+  | "lower-third" // 放送番組テロップ風(画面下 1/3)
+  | "cornerframe" // L字フレームの低占有レイアウト
+  | "relay" // 縦レールで情報を接続
+  | "tabdeck" // 段差カードの縦積み
+  | "ledger" // 明色の大会冊子・編集デザイン
+  | "matrix" // 高さを抑えた2列情報グリッド
+  | "badge-dock"; // チームロゴを大きく扱う左ドック
 
 export type OverlaySettings = {
   iconImage: string;

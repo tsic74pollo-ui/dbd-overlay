@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>レイアウト刷新プレビュー — 新規既定2案 ＋ Classicリデザイン</title>
+<style>
+  :root{
+    --bg:#0d0e12; --panel:#14161c; --line:#262a33; --text:#e9ebee; --muted:#9aa1ab;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  }
+  header.page{
+    padding:18px 22px 10px; border-bottom:1px solid var(--line);
+  }
+  header.page h1{font-size:16px; margin:0 0 4px}
+  header.page p{font-size:12px; color:var(--muted); margin:0; line-height:1.6}
+  .grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(430px,1fr));
+    gap:18px; padding:18px 22px 40px;
+  }
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  }
+  .card>.head{
+    display:flex; align-items:baseline; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line);
+  }
+  .card>.head .tag{
+    font-size:11px; font-weight:700; letter-spacing:.08em; padding:2px 8px; border-radius:999px;
+  }
+  .tag.a{background:#3b1114; color:#ff8d7e; border:1px solid #7a2a2a}
+  .tag.b{background:#0e2231; color:#6fd3ff; border:1px solid #234b63}
+  .tag.c{background:#242018; color:#e8c37a; border:1px solid #56482a}
+  .card>.head h2{font-size:14px; margin:0}
+  .card>.head span.note{font-size:11px; color:var(--muted)}
+  /* 16:9 ステージ(左上領域の切り出し) — DBD風の暗い背景 */
+  .stage{
+    position:relative; height:430px; overflow:hidden;
+    background:
+      radial-gradient(120% 100% at 78% 8%, rgba(38,58,44,.55) 0%, transparent 55%),
+      repeating-linear-gradient(45deg,#101116 0 16px,#15161c 16px 32px);
+  }
+  .desc{padding:12px 16px; font-size:12px; color:var(--muted); line-height:1.75; border-top:1px solid var(--line)}
+  .desc b{color:var(--text)}
+
+  /* ============ 案A: Emberline（左アクセント帯・非対称フェード） ============ */
+  .A{position:absolute; top:22px; left:22px; width:360px}
+  .A .eyebrow{
+    display:flex; align-items:center; gap:8px; margin-bottom:6px;
+    font-size:12px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:#cfd5dc;
+  }
+  .A .eyebrow .dia{width:10px; height:10px; transform:rotate(45deg);
+    background:linear-gradient(135deg,#ff5d45,#c9243f); box-shadow:0 0 8px rgba(255,93,69,.6)}
+  .A h3{
+    margin:0 0 12px; font-size:38px; line-height:1.02; font-weight:900; letter-spacing:-.015em;
+    text-shadow:0 2px 10px rgba(0,0,0,.75);
+  }
+  .A h3 .sub{display:block; font-size:13px; font-weight:600; letter-spacing:.14em; color:#b9c0c9; margin-top:5px}
+  .A .rows{position:relative; padding-left:14px; display:flex; flex-direction:column; gap:7px}
+  .A .rows::before{ /* 左縦アクセント帯 */
+    content:""; position:absolute; left:0; top:2px; bottom:2px; width:4px; border-radius:2px;
+    background:linear-gradient(180deg,#ff7a4d,#c9243f 55%,#5b1020);
+    box-shadow:0 0 12px rgba(201,36,63,.55);
+  }
+  .A .row{
+    font-size:16px; font-weight:800; letter-spacing:.02em; padding:8px 18px 8px 12px;
+    background:linear-gradient(90deg, rgba(16,17,22,.92) 0%, rgba(16,17,22,.55) 62%, rgba(16,17,22,0) 100%);
+    border-radius:3px; text-shadow:1px 1px 2px rgba(0,0,0,.85); width:max-content; min-width:250px;
+  }
+  .A .row .cyan{color:#4fc3ff} .A .row .red{color:#ff5d5d}
+  .A .set{
+    margin-top:11px; display:flex; align-items:center; gap:10px; width:max-content;
+    padding:7px 16px 7px 8px; border-radius:3px;
+    background:linear-gradient(90deg, rgba(28,14,16,.95), rgba(28,14,16,.35) 80%, transparent);
+  }
+  .A .set .badge{
+    display:grid; place-items:center; width:26px; height:26px; transform:rotate(45deg);
+    background:linear-gradient(135deg,#ff5d45,#c9243f); border-radius:4px;
+    box-shadow:0 0 10px rgba(255,93,69,.5);
+  }
+  .A .set .badge b{transform:rotate(-45deg); font-size:12px; color:#fff}
+  .A .set .txt{font-size:15px; font-weight:800; text-shadow:1px 1px 2px rgba(0,0,0,.85)}
+  .A .set .txt small{font-weight:600; color:#c9ced6}
+
+  /* ============ 案B: Cutline（斜めカット・エスポーツ系） ============ */
+  .B{position:absolute; top:22px; left:22px; width:370px}
+  .B .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; margin-bottom:8px; padding:3px 14px 3px 10px;
+    font-size:11px; font-weight:700; letter-spacing:.24em; text-transform:uppercase; color:#0d0e12;
+    background:linear-gradient(90deg,#dfe5ec,#aeb7c2);
+    clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);
+  }
+  .B h3{
+    margin:0 0 4px; font-size:37px; line-height:1.02; font-weight:900; letter-spacing:.01em;
+    text-shadow:0 2px 10px rgba(0,0,0,.75);
+  }
+  .B .titlebar{ height:3px; width:190px; margin:0 0 14px;
+    background:linear-gradient(90deg,#59d7ff,#2a7de1 70%,transparent);
+    clip-path:polygon(0 0,100% 0,calc(100% - 6px) 100%,0 100%); }
+  .B .rows{display:flex; flex-direction:column; gap:7px}
+  .B .row{
+    position:relative; width:max-content; min-width:265px; padding:8px 26px 8px 14px;
+    font-size:16px; font-weight:800; letter-spacing:.03em;
+    background:rgba(13,15,20,.88); text-shadow:1px 1px 2px rgba(0,0,0,.85);
+    clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);
+    border-left:3px solid #59d7ff;
+  }
+  .B .row::after{content:""; position:absolute; inset:0 0 auto 0; height:1px;
+    background:linear-gradient(90deg,rgba(137,216,255,.5),transparent)}
+  .B .row .cyan{color:#4fc3ff} .B .row .red{color:#ff5d5d}
+  .B .set{
+    margin-top:12px; width:max-content; display:flex; align-items:center; gap:0; overflow:hidden;
+    clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);
+  }
+  .B .set .no{
+    padding:8px 12px; font-size:13px; font-weight:900; letter-spacing:.06em; color:#06121c;
+    background:linear-gradient(135deg,#8fe1ff,#3fa7e8);
+  }
+  .B .set .txt{
+    padding:8px 26px 8px 14px; font-size:15px; font-weight:800; background:rgba(13,15,20,.88);
+    text-shadow:1px 1px 2px rgba(0,0,0,.85);
+  }
+  .B .set .txt small{font-weight:600; color:#c9ced6}
+
+  /* ============ 案C: Classicリデザイン「Simple Stack」(データ互換の見た目刷新) ============ */
+  .C{position:absolute; top:22px; left:22px; width:360px}
+  .C .eyebrow{display:flex; align-items:center; gap:9px; margin-bottom:7px}
+  .C .eyebrow img{width:30px; height:30px; opacity:.9}
+  .C .eyebrow span{font-size:13px; font-weight:700; letter-spacing:.12em; color:#ccd2d9;
+    text-shadow:1px 1px 2px rgba(0,0,0,.8)}
+  .C h3{
+    margin:0 0 13px; font-size:36px; line-height:1.05; font-weight:900; letter-spacing:-.01em;
+    text-shadow:0 2px 8px rgba(0,0,0,.8);
+    border-bottom:2px solid rgba(255,255,255,.22); padding-bottom:9px; width:max-content; padding-right:26px;
+  }
+  .C .rows{display:flex; flex-direction:column; gap:8px}
+  .C .row{
+    width:max-content; min-width:255px; padding:9px 20px;
+    font-size:16px; font-weight:800; letter-spacing:.02em; text-align:center;
+    background:linear-gradient(180deg, rgba(41,44,52,.92), rgba(24,26,31,.92));
+    border:1px solid rgba(255,255,255,.09); border-radius:9px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 3px 10px rgba(0,0,0,.45);
+    text-shadow:1px 1px 2px rgba(0,0,0,.85);
+  }
+  .C .row .cyan{color:#4fc3ff} .C .row .red{color:#ff5d5d}
+  .C .set{
+    margin-top:12px; width:max-content; display:flex; align-items:center; gap:9px;
+    padding:8px 18px; border-radius:999px;
+    background:rgba(18,20,25,.9); border:1px solid rgba(255,255,255,.1);
+    box-shadow:0 3px 10px rgba(0,0,0,.4);
+  }
+  .C .set .dia{width:9px; height:9px; transform:rotate(45deg); background:#e8c37a; flex:none;
+    box-shadow:0 0 7px rgba(232,195,122,.6)}
+  .C .set .txt{font-size:15px; font-weight:800; text-shadow:1px 1px 2px rgba(0,0,0,.85)}
+  .C .set .txt small{font-weight:600; color:#c9ced6}
+
+  /* SETのループフェード(全案共通・cubic-bezier) */
+  .setfade{animation:setFade 6s cubic-bezier(.4,0,.2,1) infinite}
+  @keyframes setFade{0%,78%,100%{opacity:1; filter:blur(0)} 86%,92%{opacity:0; filter:blur(6px)}}
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>試合情報レイアウト刷新 — 新規既定候補2案 ＋ Classicリデザイン案</h1>
+  <p>目的: トレース由来の見た目から脱却したオリジナルデザインへ。A/Bのどちらかを<b>新規ユーザーの既定</b>に、CはClassicの見た目差し替え（データ構造・設定はそのまま）。文言はあなたの実運用データを使用。</p>
+</header>
+
+<div class="grid">
+
+  <!-- ================= 案A ================= -->
+  <section class="card">
+    <div class="head"><span class="tag a">案A</span><h2>Emberline</h2><span class="note">左アクセント帯 × 非対称フェード</span></div>
+    <div class="stage">
+      <div class="A">
+        <div class="eyebrow"><span class="dia"></span> ivy laurel Team Scrims</div>
+        <h3>GUEST SCRIMS</h3>
+        <div class="rows">
+          <div class="row"><span class="cyan">ivy laurel</span> Survivor</div>
+          <div class="row">VS <span class="red">GAUGAU</span></div>
+          <div class="row">DIF CASUAL Cup Vol.11 RULESET</div>
+        </div>
+        <div class="set setfade">
+          <span class="badge"><b>1</b></span>
+          <span class="txt">Coal Tower <small>（Killer Pick）</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="desc">
+      <b>狙い:</b> 「べた黒の四角が縦に並ぶ」構造そのものを捨て、左の発光アクセント帯＋右へ溶けるグラデ行で<b>ひと目で別物</b>に。SET番号はひし形バッジ（パーク隠しカバーと同じモチーフ＝ブランドの一貫性）。ゲーム画面への圧迫感が最も少ない。
+    </div>
+  </section>
+
+  <!-- ================= 案B ================= -->
+  <section class="card">
+    <div class="head"><span class="tag b">案B</span><h2>Cutline</h2><span class="note">斜めカット × エスポーツ調</span></div>
+    <div class="stage">
+      <div class="B">
+        <div class="eyebrow">ivy laurel Team Scrims</div>
+        <h3>GUEST SCRIMS</h3>
+        <div class="titlebar"></div>
+        <div class="rows">
+          <div class="row"><span class="cyan">ivy laurel</span> Survivor</div>
+          <div class="row">VS <span class="red">GAUGAU</span></div>
+          <div class="row">DIF CASUAL Cup Vol.11 RULESET</div>
+        </div>
+        <div class="set setfade">
+          <span class="no">SET 1</span>
+          <span class="txt">Coal Tower <small>（Killer Pick）</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="desc">
+      <b>狙い:</b> 大会配信で映える競技系。行末の斜めカット＋上辺ヘアライン＋左ボーダーで、フラットな長方形とは別系統に。SETは「SET 1」タブ＋本文の2トーン構造。スクリム/大会の空気に最も寄る。
+    </div>
+  </section>
+
+  <!-- ================= 案C ================= -->
+  <section class="card">
+    <div class="head"><span class="tag c">案C</span><h2>Classicリデザイン「Simple Stack」</h2><span class="note">互換維持・見た目のみ刷新</span></div>
+    <div class="stage">
+      <div class="C">
+        <div class="eyebrow"><img src="public/icons/icon-1.png" alt=""><span>ivy laurel Team Scrims</span></div>
+        <h3>GUEST SCRIMS</h3>
+        <div class="rows">
+          <div class="row"><span class="cyan">ivy laurel</span> Survivor</div>
+          <div class="row">VS <span class="red">GAUGAU</span></div>
+          <div class="row">DIF CASUAL Cup Vol.11 RULESET</div>
+        </div>
+        <div class="set setfade">
+          <span class="dia"></span>
+          <span class="txt">SET1: Coal Tower <small>（Killer Pick）</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="desc">
+      <b>狙い:</b> 既存Classicの「縦積み構造」は維持したまま（今のルーム設定がそのまま映る）、角丸＋上面ハイライトのグラデボックス・下線付きタイトル・ピル型SET行・フォント刷新で<b>トレースの痕跡を消す</b>。▶は◆に置換。新規アイコン(左上)も反映。
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

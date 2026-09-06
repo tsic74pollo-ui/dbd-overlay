@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DBD Overlay — 左上レイアウト新規6案</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --page:#0a0b0e;
+    --panel:#111319;
+    --line:#282c35;
+    --text:#f5f6f7;
+    --muted:#9299a5;
+    --red:#ff4b55;
+    --cyan:#58d8ff;
+    --gold:#f5c35b;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--page)}
+  body{
+    margin:0;
+    min-width:320px;
+    background:
+      radial-gradient(900px 480px at 10% -5%,rgba(74,21,28,.22),transparent 68%),
+      var(--page);
+    color:var(--text);
+    font-family:"Segoe UI","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif;
+  }
+  .page-head{
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:16px 22px;
+    border-bottom:1px solid var(--line);
+    background:rgba(10,11,14,.93);
+    -webkit-backdrop-filter:blur(16px);
+    backdrop-filter:blur(16px);
+  }
+  .page-head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;max-width:1500px}
+  .page-head h1{margin:0 0 5px;font-size:17px;letter-spacing:.02em}
+  .page-head p{margin:0;color:var(--muted);font-size:12px;line-height:1.7}
+  .controls{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;flex:none}
+  button{
+    appearance:none;
+    border:1px solid #303540;
+    border-radius:999px;
+    padding:7px 12px;
+    background:#151820;
+    color:#aab0ba;
+    font:700 11px/1 inherit;
+    cursor:pointer;
+  }
+  button:hover{border-color:#4c5360;color:#fff}
+  button.on{background:#eceef1;color:#12141a;border-color:#eceef1}
+  main{padding:22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:26px;max-width:1600px}
+  .concept{min-width:0}
+  .concept-head{display:flex;align-items:baseline;gap:9px;margin:0 0 9px}
+  .concept-no{
+    display:inline-grid;place-items:center;min-width:26px;height:20px;padding:0 7px;
+    border:1px solid #3b414d;border-radius:5px;color:#c9ced6;font-size:10px;font-weight:900;letter-spacing:.08em;
+  }
+  .concept h2{font-size:15px;margin:0}
+  .concept-kicker{color:var(--muted);font-size:11px}
+  .canvas-outer{
+    position:relative;
+    width:100%;
+    aspect-ratio:16/9;
+    overflow:hidden;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background-color:#191b20;
+    box-shadow:0 18px 45px rgba(0,0,0,.25);
+  }
+  .canvas-outer::before,.canvas-outer::after{content:"";position:absolute;pointer-events:none}
+  .canvas-outer::before{inset:-20%;transition:background .2s cubic-bezier(.4,0,.2,1)}
+  .canvas-outer::after{inset:0;background:linear-gradient(90deg,rgba(0,0,0,.23),transparent 42%,rgba(0,0,0,.08))}
+  body[data-bg="game"] .canvas-outer::before{
+    background:
+      radial-gradient(42% 58% at 76% 26%,rgba(187,207,188,.25),transparent 65%),
+      radial-gradient(25% 48% at 26% 72%,rgba(150,44,38,.22),transparent 65%),
+      repeating-linear-gradient(112deg,rgba(255,255,255,.025) 0 2px,transparent 2px 19px),
+      linear-gradient(135deg,#202927 0%,#101419 45%,#30201e 100%);
+  }
+  body[data-bg="dark"] .canvas-outer::before{
+    background:radial-gradient(55% 70% at 70% 20%,#252a31,transparent 72%),linear-gradient(145deg,#111318,#060708);
+  }
+  body[data-bg="bright"] .canvas-outer::before{
+    background:radial-gradient(45% 65% at 75% 24%,#bbc6bf,transparent 70%),linear-gradient(135deg,#77847d,#a99182 57%,#5d6764);
+  }
+  .canvas-inner{position:absolute;z-index:2;inset:0 auto auto 0;width:1920px;height:1080px;transform-origin:top left}
+  .grid{
+    position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s cubic-bezier(.4,0,.2,1);
+    background-image:linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(0deg,rgba(255,255,255,.12) 1px,transparent 1px);
+    background-size:192px 108px;
+  }
+  body.show-grid .grid{opacity:.36}
+  .desc{margin:9px 2px 0;color:var(--muted);font-size:11px;line-height:1.65}
+  .desc b{color:#e8eaee}
+  .cyan{color:var(--cyan)}
+  .red{color:#ff6870}
+  .setfade{animation:setFade 6s cubic-bezier(.4,0,.2,1) infinite}
+  @keyframes setFade{0%,76%,100%{opacity:1;filter:blur(0);transform:translateY(0)}86%,92%{opacity:0;filter:blur(6px);transform:translateY(-8px)}}
+
+  /* I — Cornerframe: 透明面積を最大化したL字アンカー */
+  .cornerframe{position:absolute;top:58px;left:62px;width:540px;padding:20px 24px 22px 30px;color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.92)}
+  .cornerframe::before{content:"";position:absolute;left:0;top:0;width:170px;height:125px;border-left:5px solid var(--red);border-top:5px solid var(--red);filter:drop-shadow(0 0 7px rgba(255,75,85,.4))}
+  .cornerframe .eyebrow{margin:0 0 8px;font-size:15px;font-weight:800;letter-spacing:.19em;text-transform:uppercase;color:#d3d7dd}
+  .cornerframe h3{margin:0 0 20px;font-size:53px;line-height:1;font-weight:950;letter-spacing:-.025em}
+  .cornerframe .rows{width:455px}
+  .cornerframe .row{display:flex;align-items:center;gap:13px;min-height:48px;border-bottom:1px solid rgba(255,255,255,.3);font-size:22px;font-weight:800;letter-spacing:.01em}
+  .cornerframe .tick{width:8px;height:8px;border:2px solid var(--red);transform:rotate(45deg);flex:none}
+  .cornerframe .set{display:flex;align-items:center;gap:13px;margin-top:15px;width:max-content;padding:9px 18px 9px 11px;background:rgba(8,9,12,.76);border-left:5px solid var(--red);font-size:20px;font-weight:750;box-shadow:0 8px 22px rgba(0,0,0,.25)}
+  .cornerframe .set b{font-size:13px;letter-spacing:.12em;color:#ff9298}
+
+  /* J — Relay: 情報を縦レールで接続 */
+  .relay{position:absolute;top:58px;left:62px;width:555px;color:#fff}
+  .relay .header{position:relative;margin-left:36px;padding:13px 22px 16px;background:rgba(9,11,15,.88);border-top:3px solid #77deff;box-shadow:0 12px 28px rgba(0,0,0,.35)}
+  .relay .header::before{content:"";position:absolute;left:-36px;top:17px;width:18px;height:18px;border-radius:50%;background:#77deff;border:5px solid #19232a;box-shadow:0 0 0 2px #77deff,0 0 12px rgba(119,222,255,.65)}
+  .relay .eyebrow{font-size:14px;font-weight:850;letter-spacing:.18em;color:#aeb9c3;text-transform:uppercase}
+  .relay h3{margin:3px 0 0;font-size:48px;line-height:1;font-weight:950;letter-spacing:-.02em}
+  .relay .track{position:relative;margin-top:10px;padding-left:36px;display:flex;flex-direction:column;gap:8px}
+  .relay .track::before{content:"";position:absolute;left:8px;top:-38px;bottom:22px;width:2px;background:linear-gradient(#77deff,rgba(119,222,255,.22) 75%,#f5c35b)}
+  .relay .row,.relay .set{position:relative;width:max-content;min-width:420px;padding:10px 19px;background:linear-gradient(90deg,rgba(9,11,15,.88),rgba(9,11,15,.53) 78%,transparent);font-size:21px;font-weight:800;text-shadow:0 2px 4px rgba(0,0,0,.9)}
+  .relay .row::before,.relay .set::before{content:"";position:absolute;left:-33px;top:50%;width:11px;height:11px;border-radius:50%;background:#151b20;border:3px solid #77deff;transform:translateY(-50%)}
+  .relay .set{margin-top:5px;color:#fff;border-bottom:2px solid rgba(245,195,91,.8)}
+  .relay .set::before{border-color:#f5c35b;background:#f5c35b;box-shadow:0 0 10px rgba(245,195,91,.5)}
+  .relay .set b{color:#f5c35b;letter-spacing:.08em}
+
+  /* K — Tabdeck: 情報階層をカードの段差で表現 */
+  .tabdeck{position:absolute;top:58px;left:62px;width:590px;color:#fff;text-shadow:0 2px 4px rgba(0,0,0,.85)}
+  .tabdeck .eyebrow{display:inline-block;margin-left:0;padding:7px 14px;background:#b52e38;font-size:14px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;box-shadow:6px 6px 0 rgba(0,0,0,.35)}
+  .tabdeck h3{position:relative;z-index:5;width:max-content;min-width:430px;margin:0;padding:13px 24px 15px;background:#11141a;border-top:1px solid rgba(255,255,255,.17);font-size:49px;line-height:1;font-weight:950;box-shadow:8px 9px 0 rgba(0,0,0,.35)}
+  .tabdeck .rows{margin-top:12px;display:flex;flex-direction:column;gap:7px}
+  .tabdeck .row,.tabdeck .set{position:relative;width:max-content;min-width:420px;padding:10px 22px 10px 24px;background:rgba(19,22,29,.91);border-left:7px solid #68727f;font-size:21px;font-weight:800;box-shadow:7px 7px 0 rgba(0,0,0,.26)}
+  .tabdeck .row:nth-child(1){margin-left:12px;border-color:#58d8ff}
+  .tabdeck .row:nth-child(2){margin-left:24px;border-color:#ff6870}
+  .tabdeck .row:nth-child(3){margin-left:36px;border-color:#8b94a0}
+  .tabdeck .set{margin:10px 0 0 48px;border-color:#f5c35b;background:#342b18;min-width:0}
+  .tabdeck .set b{color:#f5c35b;letter-spacing:.08em}
+
+  /* L — Ledger: 明るい紙面調、遠目でも強いコントラスト */
+  .ledger{position:absolute;top:58px;left:62px;width:500px;background:rgba(239,235,222,.96);color:#111318;box-shadow:13px 15px 0 rgba(0,0,0,.34),0 25px 55px rgba(0,0,0,.28)}
+  .ledger .top{padding:18px 22px 16px;border-top:8px solid #d43842}
+  .ledger .eyebrow{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:#63666c}
+  .ledger .eyebrow span:last-child{padding:3px 7px;background:#15171b;color:#f3f1e8;font-size:10px}
+  .ledger h3{margin:7px 0 0;font-family:"Arial Narrow","Roboto Condensed","Yu Gothic UI",sans-serif;font-size:52px;line-height:.95;font-weight:950;letter-spacing:-.035em}
+  .ledger .rows{border-top:3px solid #181a1e}
+  .ledger .row{display:grid;grid-template-columns:42px 1fr;align-items:center;min-height:49px;border-bottom:1px solid #a4a198;font-size:20px;font-weight:850}
+  .ledger .idx{align-self:stretch;display:grid;place-items:center;border-right:1px solid #a4a198;color:#d43842;font:900 12px/1 ui-monospace,monospace}
+  .ledger .copy{padding:9px 16px}
+  .ledger .cyan{color:#007a9d}.ledger .red{color:#b91f2c}
+  .ledger .set{display:flex;align-items:center;gap:15px;padding:12px 18px;background:#17191d;color:#fff;font-size:19px;font-weight:750}
+  .ledger .set b{padding:4px 8px;background:#d43842;font-size:12px;letter-spacing:.1em}
+
+  /* M — Matrix: 高さを抑えたモジュールグリッド */
+  .matrix{position:absolute;top:58px;left:62px;width:680px;color:#fff;background:rgba(8,11,16,.83);border:1px solid rgba(130,217,255,.33);box-shadow:0 18px 42px rgba(0,0,0,.38)}
+  .matrix .mast{display:grid;grid-template-columns:74px 1fr;border-bottom:1px solid rgba(255,255,255,.15)}
+  .matrix .mark{display:grid;place-items:center;background:#58d8ff;color:#071118;font:950 25px/1 ui-monospace,monospace}
+  .matrix .title{padding:12px 18px 14px}
+  .matrix .eyebrow{font-size:13px;font-weight:850;letter-spacing:.17em;color:#aab5bf;text-transform:uppercase}
+  .matrix h3{margin:3px 0 0;font-size:43px;line-height:1;font-weight:950;letter-spacing:-.02em}
+  .matrix .cells{display:grid;grid-template-columns:1fr 1fr}
+  .matrix .cell{min-height:59px;padding:10px 16px;border-right:1px solid rgba(255,255,255,.12);border-bottom:1px solid rgba(255,255,255,.12);font-size:19px;font-weight:800}
+  .matrix .cell span.label{display:block;margin-bottom:3px;color:#788490;font:800 10px/1 ui-monospace,monospace;letter-spacing:.12em}
+  .matrix .wide{grid-column:1/-1;border-right:0}
+  .matrix .footer{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:10px 16px;border-left:6px solid #f5c35b;background:rgba(245,195,91,.08);font-size:18px;font-weight:750}
+  .matrix .footer b{color:#f5c35b;font-size:12px;letter-spacing:.13em;white-space:nowrap}
+
+  /* N — Badge Dock: ユーザーロゴを主役にする左ドック */
+  .badgedock{position:absolute;top:58px;left:62px;width:650px;color:#fff;display:grid;grid-template-columns:112px 1fr;filter:drop-shadow(0 16px 24px rgba(0,0,0,.34))}
+  .badgedock .dock{position:relative;z-index:2;display:flex;align-items:center;flex-direction:column;padding:18px 10px;background:linear-gradient(180deg,#a92935,#61151d);border:1px solid rgba(255,255,255,.18)}
+  .badgedock .logo{width:68px;height:68px;display:grid;place-items:center;transform:rotate(45deg);border:2px solid rgba(255,255,255,.8);background:rgba(0,0,0,.18)}
+  .badgedock .logo svg{width:42px;height:42px;transform:rotate(-45deg)}
+  .badgedock .dock small{margin-top:24px;font-size:10px;font-weight:900;letter-spacing:.18em;writing-mode:vertical-rl;text-transform:uppercase;opacity:.8}
+  .badgedock .content{background:linear-gradient(90deg,rgba(10,12,16,.94),rgba(10,12,16,.72) 82%,rgba(10,12,16,.18));border-top:1px solid rgba(255,255,255,.14)}
+  .badgedock .head{padding:13px 19px 14px;border-bottom:1px solid rgba(255,255,255,.12)}
+  .badgedock .eyebrow{font-size:13px;font-weight:850;letter-spacing:.16em;color:#c0c6cd;text-transform:uppercase}
+  .badgedock h3{margin:4px 0 0;font-size:44px;line-height:1;font-weight:950;letter-spacing:-.02em}
+  .badgedock .row{display:flex;align-items:center;gap:11px;min-height:45px;padding:7px 18px;border-bottom:1px solid rgba(255,255,255,.1);font-size:19px;font-weight:800}
+  .badgedock .dash{width:14px;height:3px;background:#ff6870;flex:none}
+  .badgedock .set{padding:10px 18px;background:rgba(169,41,53,.24);font-size:18px;font-weight:750;border-bottom:1px solid rgba(255,104,112,.28)}
+  .badgedock .set b{margin-right:10px;color:#ff8c92;letter-spacing:.1em;font-size:12px}
+
+  @media (max-width:980px){
+    .page-head{position:static}
+    .page-head-row{display:block}
+    .controls{margin-top:12px;justify-content:flex-start}
+    main{grid-template-columns:1fr;padding:14px;gap:24px}
+  }
+</style>
+</head>
+<body data-bg="game">
+<header class="page-head">
+  <div class="page-head-row">
+    <div>
+      <h1>左上レイアウト — 新規6案（1920×1080原寸設計）</h1>
+      <p>すべてClassicと同じ「チーム名 / タイトル / 3行 / SET」を表示。背景を切り替えて、ゲーム画面上での視認性と占有感を比較できます。</p>
+    </div>
+    <div class="controls" aria-label="プレビュー設定">
+      <button class="on" data-bg="game">ゲーム想定</button>
+      <button data-bg="dark">暗い背景</button>
+      <button data-bg="bright">明るい背景</button>
+      <button id="gridButton" aria-pressed="false">10%グリッド</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="concept">
+    <div class="concept-head"><span class="concept-no">I</span><h2>Cornerframe</h2><span class="concept-kicker">最小限のL字フレーム</span></div>
+    <div class="canvas-outer"><div class="canvas-inner"><div class="grid"></div>
+      <div class="cornerframe">
+        <div class="eyebrow">ivy laurel Team Scrims</div>
+        <h3>GUEST SCRIMS</h3>
+        <div class="rows">
+          <div class="row"><span class="tick"></span><span><span class="cyan">ivy laurel</span> Survivor</span></div>
+          <div class="row"><span class="tick"></span><span>VS <span class="red">GAUGAU</span></span></div>
+          <div class="row"><span class="tick"></span><span>DIF CASUAL Cup Vol.11 RULESET</span></div>
+        </div>
+        <div class="set setfade"><b>SET 1</b><span>Coal Tower（Killer Pick）</span></div>
+      </div>
+    </div></div>
+    <p class="desc"><b>特徴:</b> 背景をほぼ隠さず、赤いL字だけで左上に固定。配信を邪魔しにくい新既定候補。占有目安 約28%×34%。</p>
+  </section>
+
+  <section class="concept">
+    <div class="concept-head"><span class="concept-no">J</span><h2>Relay</h2><span class="concept-kicker">縦レールで情報を接続</span></div>
+    <div class="canvas-outer"><div class="canvas-inner"><div class="grid"></div>
+      <div class="relay">
+        <div class="header"><div class="eyebrow">ivy laurel Team Scrims</div><h3>GUEST SCRIMS</h3></div>
+        <div class="track">
+          <div class="row"><span class="cyan">ivy laurel</span>&nbsp; Survivor</div>
+          <div class="row">VS&nbsp; <span class="red">GAUGAU</span></div>
+          <div class="row">DIF CASUAL Cup Vol.11 RULESET</div>
+          <div class="set setfade"><b>SET 1</b>&nbsp;&nbsp;Coal Tower（Killer Pick）</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="desc"><b>特徴:</b> 試合情報を時系列の信号として見せる。行数が増減しても構造が崩れにくく、競技配信らしさが強い。占有目安 約29%×36%。</p>
+  </section>
+
+  <section class="concept">
+    <div class="concept-head"><span class="concept-no">K</span><h2>Tabdeck</h2><span class="concept-kicker">段差のあるカード束</span></div>
+    <div class="canvas-outer"><div class="canvas-inner"><div class="grid"></div>
+      <div class="tabdeck">
+        <div class="eyebrow">ivy laurel Team Scrims</div>
+        <h3>GUEST SCRIMS</h3>
+        <div class="rows">
+          <div class="row"><span class="cyan">ivy laurel</span> Survivor</div>
+          <div class="row">VS <span class="red">GAUGAU</span></div>
+          <div class="row">DIF CASUAL Cup Vol.11 RULESET</div>
+        </div>
+        <div class="set setfade"><b>SET 1</b>&nbsp;&nbsp;Coal Tower（Killer Pick）</div>
+      </div>
+    </div></div>
+    <p class="desc"><b>特徴:</b> 各情報を少しずつ右へずらし、順序と奥行きを表現。Classicの縦積み操作感を保ちながら見た目は明確に別物。占有目安 約31%×36%。</p>
+  </section>
+
+  <section class="concept">
+    <div class="concept-head"><span class="concept-no">L</span><h2>Ledger</h2><span class="concept-kicker">高コントラストの大会冊子調</span></div>
+    <div class="canvas-outer"><div class="canvas-inner"><div class="grid"></div>
+      <div class="ledger">
+        <div class="top"><div class="eyebrow"><span>ivy laurel Team Scrims</span><span>LIVE</span></div><h3>GUEST SCRIMS</h3></div>
+        <div class="rows">
+          <div class="row"><span class="idx">01</span><span class="copy"><span class="cyan">ivy laurel</span> Survivor</span></div>
+          <div class="row"><span class="idx">02</span><span class="copy">VS <span class="red">GAUGAU</span></span></div>
+          <div class="row"><span class="idx">03</span><span class="copy">DIF CASUAL Cup Vol.11 RULESET</span></div>
+        </div>
+        <div class="set setfade"><b>SET 1</b><span>Coal Tower（Killer Pick）</span></div>
+      </div>
+    </div></div>
+    <p class="desc"><b>特徴:</b> 唯一の明色面。暗いマップで最も読みやすく、イベントポスターや大会冊子のような編集デザイン。占有目安 約26%×34%。</p>
+  </section>
+
+  <section class="concept">
+    <div class="concept-head"><span class="concept-no">M</span><h2>Matrix</h2><span class="concept-kicker">高さを抑えた情報グリッド</span></div>
+    <div class="canvas-outer"><div class="canvas-inner"><div class="grid"></div>
+      <div class="matrix">
+        <div class="mast"><div class="mark">IL</div><div class="title"><div class="eyebrow">ivy laurel Team Scrims</div><h3>GUEST SCRIMS</h3></div></div>
+        <div class="cells">
+          <div class="cell"><span class="label">SURVIVOR</span><span class="cyan">ivy laurel</span> Survivor</div>
+          <div class="cell"><span class="label">OPPONENT</span>VS <span class="red">GAUGAU</span></div>
+          <div class="cell wide"><span class="label">RULESET</span>DIF CASUAL Cup Vol.11 RULESET</div>
+        </div>
+        <div class="footer setfade"><b>NOW PLAYING · SET 1</b><span>Coal Tower（Killer Pick）</span></div>
+      </div>
+    </div></div>
+    <p class="desc"><b>特徴:</b> 2行を横並びにして高さを約27%へ圧縮。16:9画面の左上を広く使える大会・スクリム向け。横幅は約35%。</p>
+  </section>
+
+  <section class="concept">
+    <div class="concept-head"><span class="concept-no">N</span><h2>Badge Dock</h2><span class="concept-kicker">チームロゴをブランドの核に</span></div>
+    <div class="canvas-outer"><div class="canvas-inner"><div class="grid"></div>
+      <div class="badgedock">
+        <div class="dock">
+          <div class="logo" aria-label="ロゴの仮表示">
+            <svg viewBox="0 0 64 64" fill="none" aria-hidden="true"><path d="M32 7 55 32 32 57 9 32 32 7Z" stroke="white" stroke-width="5"/><path d="m20 34 8 8 17-21" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+          <small>TEAM SCRIMS</small>
+        </div>
+        <div class="content">
+          <div class="head"><div class="eyebrow">ivy laurel Team Scrims</div><h3>GUEST SCRIMS</h3></div>
+          <div class="row"><span class="dash"></span><span><span class="cyan">ivy laurel</span> Survivor</span></div>
+          <div class="row"><span class="dash"></span><span>VS <span class="red">GAUGAU</span></span></div>
+          <div class="row"><span class="dash"></span><span>DIF CASUAL Cup Vol.11 RULESET</span></div>
+          <div class="set setfade"><b>SET 1</b>Coal Tower（Killer Pick）</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="desc"><b>特徴:</b> アップロードしたロゴを大きく見せ、配信者・チームごとの差別化を作る。サービス化した際の「自分専用感」が最も強い。占有目安 約34%×34%。</p>
+  </section>
+</main>
+
+<script>
+  const resize = () => {
+    document.querySelectorAll('.canvas-outer').forEach((outer) => {
+      const inner = outer.querySelector('.canvas-inner');
+      inner.style.transform = `scale(${outer.clientWidth / 1920})`;
+    });
+  };
+  new ResizeObserver(resize).observe(document.querySelector('main'));
+  window.addEventListener('load', resize);
+  document.querySelectorAll('[data-bg]').forEach((button) => {
+    if (button.tagName !== 'BUTTON') return;
+    button.addEventListener('click', () => {
+      document.body.dataset.bg = button.dataset.bg;
+      document.querySelectorAll('button[data-bg]').forEach((item) => item.classList.toggle('on', item === button));
+    });
+  });
+  document.querySelector('#gridButton').addEventListener('click', (event) => {
+    const enabled = document.body.classList.toggle('show-grid');
+    event.currentTarget.classList.toggle('on', enabled);
+    event.currentTarget.setAttribute('aria-pressed', String(enabled));
+  });
+</script>
+</body>
+</html>

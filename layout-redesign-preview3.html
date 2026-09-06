@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>レイアウト刷新プレビュー 最終比較 — D vs A（原寸1920×1080相当）</title>
+<style>
+  :root{ --bg:#0d0e12; --panel:#14161c; --line:#262a33; --text:#e9ebee; --muted:#9aa1ab; }
+  *{box-sizing:border-box}
+  body{ margin:0; background:var(--bg); color:var(--text);
+    font-family:"Segoe UI","Yu Gothic UI","Noto Sans JP",system-ui,sans-serif; }
+  header.page{ padding:18px 22px 14px; border-bottom:1px solid var(--line); }
+  header.page h1{font-size:16px; margin:0 0 4px}
+  header.page p{font-size:12px; color:var(--muted); margin:0; line-height:1.7}
+  .wrap{ padding:22px; display:flex; flex-direction:column; gap:30px; }
+  .block .head{ display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
+  .block .tag{font-size:11px; font-weight:700; letter-spacing:.08em; padding:2px 8px; border-radius:999px}
+  .tag.d{background:#101d2e; color:#8fc9ff; border:1px solid #29496b}
+  .tag.a{background:#3b1114; color:#ff8d7e; border:1px solid #7a2a2a}
+  .block h2{font-size:15px; margin:0}
+  .block .note{font-size:11px; color:var(--muted)}
+
+  /* 1920x1080 を実サイズのまま作り、表示幅に応じて縮小するキャンバス */
+  .canvas-outer{ width:100%; max-width:1600px; aspect-ratio:16/9; position:relative; overflow:hidden;
+    border:1px solid var(--line); border-radius:10px;
+    background:
+      radial-gradient(120% 100% at 78% 8%, rgba(38,58,44,.55) 0%, transparent 55%),
+      repeating-linear-gradient(45deg,#101116 0 16px,#15161c 16px 32px);
+  }
+  .canvas-inner{ position:absolute; top:0; left:0; width:1920px; height:1080px;
+    transform-origin:top left; }
+  /* 表示幅に対して 1920px をスケールする(JSなし・containerクエリ代替でvw計算) */
+  .canvas-inner{ transform:scale(calc(100vw/1920*0.735)); }
+  @media (min-width:1250px){ .canvas-inner{ transform:scale(0.8177); } } /* max-width:1600pxで頭打ちの時の固定スケール(1600/1920) */
+
+  .ruler{ position:absolute; inset:0; pointer-events:none; opacity:.35;
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(255,255,255,.12) 1px, transparent 1px);
+    background-size:192px 108px; } /* 1920/10, 1080/10 の10%グリッド */
+
+  .desc{margin-top:10px; font-size:12px; color:var(--muted); line-height:1.75; max-width:1600px}
+  .desc b{color:var(--text)}
+
+  /* ============ 案D: Glasspane ============ */
+  .D{position:absolute; top:64px; left:64px; width:460px;
+    background:rgba(15,17,23,.52);
+    -webkit-backdrop-filter:blur(14px) saturate(1.25); backdrop-filter:blur(14px) saturate(1.25);
+    border:1px solid rgba(255,255,255,.13); border-radius:20px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 14px 40px rgba(0,0,0,.5);
+    padding:24px 26px 20px;
+  }
+  .D .eyebrow{font-size:15px; font-weight:700; letter-spacing:.24em; text-transform:uppercase;
+    color:#aeb7c4; margin-bottom:6px}
+  .D h3{margin:0 0 18px; font-size:46px; line-height:1.05; font-weight:900; letter-spacing:-.01em;
+    text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .D .rows{display:flex; flex-direction:column}
+  .D .row{ display:flex; align-items:center; gap:14px; padding:13px 2px;
+    font-size:22px; font-weight:800; letter-spacing:.02em;
+    border-top:1px solid rgba(255,255,255,.09); }
+  .D .row .dia{width:10px; height:10px; transform:rotate(45deg); background:#8fc9ff; flex:none;
+    box-shadow:0 0 6px rgba(143,201,255,.6)}
+  .D .row .cyan{color:#4fc3ff} .D .row .red{color:#ff5d5d}
+  .D .set{ margin-top:17px; display:flex; align-items:center; gap:14px;
+    padding:13px 17px; border-radius:14px;
+    background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); }
+  .D .set .no{font-size:15px; font-weight:900; letter-spacing:.1em; color:#0d1420;
+    background:linear-gradient(135deg,#bfe3ff,#79b8ef); padding:5px 13px; border-radius:8px}
+  .D .set .txt{font-size:20px; font-weight:800}
+  .D .set .txt small{font-weight:600; color:#c3cad4}
+
+  /* ============ 案A: Emberline ============ */
+  .A{position:absolute; top:64px; left:64px; width:520px}
+  .A .eyebrow{ display:flex; align-items:center; gap:11px; margin-bottom:9px;
+    font-size:16px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:#cfd5dc; }
+  .A .eyebrow .dia{width:14px; height:14px; transform:rotate(45deg);
+    background:linear-gradient(135deg,#ff5d45,#c9243f); box-shadow:0 0 8px rgba(255,93,69,.6)}
+  .A h3{ margin:0 0 17px; font-size:54px; line-height:1.02; font-weight:900; letter-spacing:-.015em;
+    text-shadow:0 2px 10px rgba(0,0,0,.75); }
+  .A .rows{position:relative; padding-left:20px; display:flex; flex-direction:column; gap:10px}
+  .A .rows::before{ content:""; position:absolute; left:0; top:2px; bottom:2px; width:6px; border-radius:3px;
+    background:linear-gradient(180deg,#ff7a4d,#c9243f 55%,#5b1020);
+    box-shadow:0 0 12px rgba(201,36,63,.55); }
+  .A .row{ font-size:23px; font-weight:800; letter-spacing:.02em; padding:11px 26px 11px 17px;
+    background:linear-gradient(90deg, rgba(16,17,22,.92) 0%, rgba(16,17,22,.55) 62%, rgba(16,17,22,0) 100%);
+    border-radius:4px; text-shadow:1px 1px 2px rgba(0,0,0,.85); width:max-content; min-width:360px; }
+  .A .row .cyan{color:#4fc3ff} .A .row .red{color:#ff5d5d}
+  .A .set{ margin-top:16px; display:flex; align-items:center; gap:14px; width:max-content;
+    padding:10px 23px 10px 12px; border-radius:4px;
+    background:linear-gradient(90deg, rgba(28,14,16,.95), rgba(28,14,16,.35) 80%, transparent); }
+  .A .set .badge{ display:grid; place-items:center; width:37px; height:37px; transform:rotate(45deg);
+    background:linear-gradient(135deg,#ff5d45,#c9243f); border-radius:6px;
+    box-shadow:0 0 10px rgba(255,93,69,.5); }
+  .A .set .badge b{transform:rotate(-45deg); font-size:17px; color:#fff}
+  .A .set .txt{font-size:21px; font-weight:800; text-shadow:1px 1px 2px rgba(0,0,0,.85)}
+  .A .set .txt small{font-weight:600; color:#c9ced6}
+
+  .setfade{animation:setFade 6s cubic-bezier(.4,0,.2,1) infinite}
+  @keyframes setFade{0%,78%,100%{opacity:1; filter:blur(0)} 86%,92%{opacity:0; filter:blur(6px)}}
+
+  .togglebar{display:flex; gap:8px; margin-bottom:14px}
+  .togglebar button{ font:inherit; font-size:11px; cursor:pointer; padding:5px 12px; border-radius:999px;
+    border:1px solid var(--line); background:#1b1e26; color:var(--muted); }
+  .togglebar button.on{background:#2a2e38; color:var(--text); border-color:#454b58}
+</style>
+</head>
+<body>
+<header class="page">
+  <h1>最終比較 — D Glasspane vs A Emberline（1920×1080 原寸換算・10%グリッド付き）</h1>
+  <p>キャンバスは実際の配信解像度 1920×1080 をそのまま作成しブラウザ幅に合わせて縮小表示（内部はCSS pxで原寸のまま＝相対的な大きさ・余白感は実配信と同じ）。薄いグリッド線は画面の10%刻み。配置は左上コーナー基準（実運用のデフォルト想定位置）。</p>
+</header>
+
+<div class="wrap">
+
+  <div class="block">
+    <div class="head"><span class="tag d">案D</span><h2>Glasspane</h2><span class="note">すりガラス1枚カード</span></div>
+    <div class="canvas-outer">
+      <div class="ruler"></div>
+      <div class="canvas-inner">
+        <div class="D">
+          <div class="eyebrow">ivy laurel Team Scrims</div>
+          <h3>GUEST SCRIMS</h3>
+          <div class="rows">
+            <div class="row"><span class="dia"></span><span><span class="cyan">ivy laurel</span> Survivor</span></div>
+            <div class="row"><span class="dia"></span><span>VS <span class="red">GAUGAU</span></span></div>
+            <div class="row"><span class="dia"></span><span>DIF CASUAL Cup Vol.11 RULESET</span></div>
+          </div>
+          <div class="set setfade">
+            <span class="no">SET 1</span>
+            <span class="txt">Coal Tower <small>（Killer Pick）</small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="desc"><b>占有面積の目安:</b> 画面全体に対して横幅 約24%・高さ 約34%（グリッド2.4マス×3.4マス）。ガラス越しに背景が透けるため体感の圧迫感はこの数値より小さい。</div>
+  </div>
+
+  <div class="block">
+    <div class="head"><span class="tag a">案A</span><h2>Emberline</h2><span class="note">左アクセント帯 × 非対称フェード</span></div>
+    <div class="canvas-outer">
+      <div class="ruler"></div>
+      <div class="canvas-inner">
+        <div class="A">
+          <div class="eyebrow"><span class="dia"></span> ivy laurel Team Scrims</div>
+          <h3>GUEST SCRIMS</h3>
+          <div class="rows">
+            <div class="row"><span class="cyan">ivy laurel</span> Survivor</div>
+            <div class="row">VS <span class="red">GAUGAU</span></div>
+            <div class="row">DIF CASUAL Cup Vol.11 RULESET</div>
+          </div>
+          <div class="set setfade">
+            <span class="badge"><b>1</b></span>
+            <span class="txt">Coal Tower <small>（Killer Pick）</small></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="desc"><b>占有面積の目安:</b> 横幅 約27%・高さ 約38%。不透明な行が右へフェードして消えるため、Dより実体感・視認性は高いが背景の見える面積はやや少ない。</div>
+  </div>
+
+</div>
+</body>
+</html>
