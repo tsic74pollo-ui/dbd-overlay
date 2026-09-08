@@ -7,13 +7,24 @@
 // short-lived, namespace-scoped token from /api/ably-token (a Vercel
 // serverless function in prod, a Vite dev middleware locally) via
 // authCallback. See api/_ablyShared.ts for what the token can and can't do.
-import * as Ably from "ably";
+// "ably/modular" instead of "ably": the default entrypoint bundles every
+// transport and plugin (~174 kB of it unused here). We use exactly one
+// transport (WebSocket), one HTTP request impl (fetch) and presence, so we
+// pull those three in explicitly and let the rest tree-shake away.
+import {
+  BaseRealtime,
+  FetchRequest,
+  RealtimePresence,
+  WebSocketTransport,
+} from "ably/modular";
+import type { Realtime } from "ably";
 
-let client: Ably.Realtime | null = null;
+let client: Realtime | null = null;
 
-export function getAbly(): Ably.Realtime {
+export function getAbly(): Realtime {
   if (!client) {
-    client = new Ably.Realtime({
+    client = new BaseRealtime({
+      plugins: { WebSocketTransport, FetchRequest, RealtimePresence },
       authCallback: (_tokenParams, callback) => {
         fetch("/api/ably-token")
           .then((r) => {

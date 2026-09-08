@@ -1,18 +1,31 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { EditorPage } from "@/routes/EditorPage";
 import { OverlayPage } from "@/routes/OverlayPage";
-import { RemotePage } from "@/routes/RemotePage";
+import { EditorPage, RemotePage } from "@/routes/lazyRoutes";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<EditorPage />} />
+        <Route
+          path="/"
+          element={
+            <Suspense fallback={null}>
+              <EditorPage />
+            </Suspense>
+          }
+        />
         <Route path="/overlay" element={<OverlayPage />} />
-        <Route path="/remote" element={<RemotePage />} />
+        <Route
+          path="/remote"
+          element={
+            <Suspense fallback={null}>
+              <RemotePage />
+            </Suspense>
+          }
+        />
       </Routes>
     </BrowserRouter>
   </StrictMode>,
