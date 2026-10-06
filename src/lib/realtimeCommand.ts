@@ -30,25 +30,35 @@ export function joinCommandChannel(
 
   events.onStatus?.("connecting");
 
-  channel.subscribe("cmd", (msg) => {
-    if (role !== "host") return; // host だけがコマンドを実行
-    const data = msg.data as { kind?: RemoteCommand } | null;
-    if (data?.kind) events.onCommand?.(data.kind);
-  });
+  // subscribe() は async で内部 attach を await する。realtimeSync.ts と同じく
+  // 片付けと競合したときの reject を捨てる。
+  channel
+    .subscribe("cmd", (msg) => {
+      if (role !== "host") return; // host だけがコマンドを実行
+      const data = msg.data as { kind?: RemoteCommand } | null;
+      if (data?.kind) events.onCommand?.(data.kind);
+    })
+    .catch(() => {});
 
   channel.on("attached", () => { if (!stopped) events.onStatus?.("live"); });
   channel.on(["detached", "suspended"], () => { if (!stopped) events.onStatus?.("connecting", "reconnecting"); });
   channel.on("failed", () => { if (!stopped) events.onStatus?.("connecting", "error"); });
-  channel.attach();
+  // realtimeSync.ts と同じ理由で Promise を握りつぶす(unhandled rejection 防止)。
+  channel.attach().catch(() => {});
 
   return {
     unsubscribe: () => {
       stopped = true;
       channel.unsubscribe();
-      channel.detach();
+      // realtimeSync.ts と同じ理由で Promise と同期 throw の両方を塞ぐ。
+      try {
+        void channel.detach()?.catch(() => {});
+      } catch {
+        /* 片付け中の例外は無視 */
+      }
     },
     send: (cmd) => {
-      channel.publish("cmd", { kind: cmd });
+      channel.publish("cmd", { kind: cmd }).catch(() => {});
     },
   };
 }

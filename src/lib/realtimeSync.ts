@@ -82,18 +82,29 @@ export function joinRoom(
       .catch(() => {});
   };
 
-  channel.subscribe("state", (msg) => {
-    const data = msg.data as { settings?: Partial<OverlaySettings> } | null;
-    if (data?.settings) events.onState(decompressSettings(data.settings));
-  });
-  channel.subscribe("req", () => {
-    if (role !== "editor") return;
-    const current = events.onStateRequest?.();
-    if (current) publishState(current);
-  });
+  // channel.subscribe()/presence.subscribe() は async で、内部で await
+  // channel.attach() する。片付け(detach)がこれより先に走ると attach が
+  // reject し、.catch() が無いと "Uncaught (in promise)" になる。
+  // 購読自体は同期的に登録済みなので、ここでの reject は捨ててよい
+  // (接続状態は channel.on("attached"/"detached"/"failed") が扱う)。
+  channel
+    .subscribe("state", (msg) => {
+      const data = msg.data as { settings?: Partial<OverlaySettings> } | null;
+      if (data?.settings) events.onState(decompressSettings(data.settings));
+    })
+    .catch(() => {});
+  channel
+    .subscribe("req", () => {
+      if (role !== "editor") return;
+      const current = events.onStateRequest?.();
+      if (current) publishState(current);
+    })
+    .catch(() => {});
 
   if (role === "editor") {
-    channel.presence.subscribe(["enter", "leave", "update", "present"], refreshViewers);
+    channel.presence
+      .subscribe(["enter", "leave", "update", "present"], refreshViewers)
+      .catch(() => {});
   }
 
   channel.on("attached", () => {
@@ -109,8 +120,20 @@ export function joinRoom(
     if (!stopped) events.onStatus?.("connecting", "error");
   });
 
-  channel.presence.enter({ role }).catch(() => {});
-  channel.attach();
+  // presence.enter() は attach 完了を待ってから呼ぶ。detached/initialized のまま
+  // 呼ぶと Ably 内部(_enterOrUpdateClient)が catch なしの channel.attach() を
+  // 走らせ、片付けと競合したときに unhandled rejection になる。
+  //
+  // .catch() は attach Promise 自身にも直接付ける。.then(...).catch(...) だけだと
+  // catch が付くのは then が作った別の Promise で、元の attach Promise は未処理の
+  // まま残るため。
+  const attached = channel.attach();
+  attached.catch(() => {});
+  attached
+    .then(() => {
+      if (!stopped) return channel.presence.enter({ role });
+    })
+    .catch(() => {});
 
   return {
     unsubscribe: () => {
@@ -118,13 +141,19 @@ export function joinRoom(
       channel.presence.leave().catch(() => {});
       channel.unsubscribe();
       channel.presence.unsubscribe();
-      channel.detach();
+      // detach() は保留中の attach を同期的に reject させる経路があるため、
+      // Promise と同期 throw の両方を塞ぐ。
+      try {
+        void channel.detach()?.catch(() => {});
+      } catch {
+        /* 片付け中の例外は無視してよい: 接続状態は channel.on(...) が扱う */
+      }
     },
     publish: (settings) => {
       publishState(settings);
     },
     requestState: () => {
-      channel.publish("req", {});
+      channel.publish("req", {}).catch(() => {});
     },
     hasViewers: () => viewerCount > 0,
   };
